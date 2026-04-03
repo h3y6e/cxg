@@ -1,6 +1,7 @@
 ---
 name: cxg
-description: Use when an AI agent is about to create a git commit in a repo where cxg is available.
+description: Use when creating a git commit.
+compatibility: Requires git and cxg.
 license: MIT
 metadata:
   author: h3y6e
@@ -9,24 +10,22 @@ metadata:
 
 # cxg
 
-Use this skill whenever an agent is about to create a new commit message. Route the message through `cxg` before it reaches git.
-
-## Rule
-
-- Never use `git commit -m ...` directly for a new message.
-- Never write a handcrafted message straight to `git commit -F ...` when `cxg` is available.
-- Use `cxg lint --fix ... | git commit -F -`.
-
-If validation fails, fix the message and rerun `cxg`. Do not bypass it.
+Route all commit messages through `cxg`. Never bypass it.
 
 ## Flow
 
+1. If unsure of commit scope, run `git diff --cached --stat`
+2. Write subject + action lines you can support
+3. Commit:
+
 ```sh
 cxg lint --fix \
-  -m 'feat(auth): add login' \
-  -m 'intent(auth): support enterprise SSO' \
+  -m 'type(scope): subject' \
+  -m 'action-type(scope): description' \
   | git commit -F -
 ```
+
+If validation fails, fix the message and rerun.
 
 ## Commit Format
 
@@ -34,58 +33,62 @@ cxg lint --fix \
 type(scope): subject line
 
 action-type(scope): description
-action-type(scope): description
 ```
 
-Valid subject types:
-`feat` `fix` `refactor` `perf` `test` `docs` `style` `build` `ci` `chore` `revert`
+Subject types: `feat` `fix` `refactor` `perf` `test` `docs` `style` `build` `ci` `chore` `revert`
 
-Valid action types:
-`intent` `decision` `rejected` `constraint` `learned`
+Action types (most commits need 1-3 lines — never pad with noise):
 
-Subject rules:
-- Follow Conventional Commits
-- Maximum 72 characters
-- No trailing period when using `--fix`
+- `intent(scope)` — what the user wanted and why. Capture their voice, not a restatement of the diff.
+- `decision(scope)` — which approach was chosen when alternatives existed, with brief reasoning.
+- `rejected(scope)` — what was considered and discarded. Always include the reason.
+- `constraint(scope)` — hard limits or dependencies that shaped the implementation.
+- `learned(scope)` — API quirks, undocumented behavior, things you wish you'd known earlier.
 
-Body rules:
-- Non-empty body lines must be valid action lines
-- Free-form body text is not accepted
-- `--fix` normalizes spacing and the subject/body gap
+Scope is a human-readable concept label (e.g. `auth`, `payment-flow`, `session-store`). Keep scopes consistent across commits.
 
-Rules:
-- Use only action lines that carry signal
-- Use the user's intent, not a restatement of the diff
-- Include the reason in `rejected(...)`
-- Do not invent context you do not have
+- Conventional Commits, max 72 chars
+- Body lines must be valid action lines (no free-form text)
 - Trivial commits can stay subject-only
+- Do not fabricate context you do not have — a clean subject with no action lines is better than invented reasoning
 
-## Variants
-
-Add a trailer:
-
-```sh
-cxg lint --fix \
-  -m 'feat(auth): add login' \
-  --trailer 'Co-authored-by: Alice <alice@example.com>' \
-  | git commit -F -
-```
-
-Inspect machine-readable errors:
+## Options
 
 ```sh
+# trailer
+cxg lint --fix -m '...' --trailer 'Co-authored-by: Alice <alice@example.com>' | git commit -F -
+
+# JSON errors
 cxg lint --json -m 'bad message'
-```
 
-Lint a message file for a hook:
-
-```sh
+# file (for hooks)
 cxg lint .git/COMMIT_EDITMSG
 ```
 
-## Before Committing
+## Examples
 
-1. Check commit scope with `git diff --cached --stat`
-2. Write the message with subject plus only the action lines you can support
-3. Run `cxg lint --fix ... | git commit -F -`
-4. If `cxg` rejects the message, fix it instead of bypassing validation
+```
+fix(button): correct alignment on mobile viewport
+```
+
+```
+feat(notifications): add email digest for weekly summaries
+
+intent(notifications): users want batch notifications instead of per-event emails
+decision(digest-schedule): weekly on Monday 9am — matches user research feedback
+constraint(email-provider): SendGrid batch API limited to 1000 recipients per call
+```
+
+```
+refactor(payments): migrate from single to multi-currency support
+
+intent(payments): enterprise customers need EUR and GBP alongside USD
+intent(payment-architecture): must be backward compatible, existing USD flows unchanged
+decision(currency-handling): per-transaction currency over account-level default
+rejected(currency-handling): account-level default too limiting for marketplace sellers
+rejected(money-library): accounting.js — lacks sub-unit arithmetic, using currency.js instead
+constraint(stripe-integration): Stripe requires currency at PaymentIntent creation, cannot change after
+constraint(database-migration): existing amount columns need companion currency columns, not replacement
+learned(stripe-multicurrency): presentment currency vs settlement currency are different Stripe concepts
+learned(exchange-rates): Stripe handles conversion, we should NOT store our own rates
+```
