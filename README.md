@@ -5,7 +5,7 @@ Commit message linter for AI agents. Validates [Contextual Commits](https://gith
 ## Install
 
 ```sh
-go install github.com/h3y6e/cxg@v2026.4.0
+go install github.com/h3y6e/cxg@v2026.4.1
 npx skills add h3y6e/cxg
 ```
 
