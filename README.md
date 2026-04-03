@@ -13,7 +13,7 @@ npx skills add h3y6e/cxg
 
 If you're a human, there's nothing to do. AI agents will automatically use `cxg` when creating commits.
 
-See [SKILL.md](.agents/skills/cxg/SKILL.md) for the commit format and rules.
+See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules.
 
 ## Development
 
