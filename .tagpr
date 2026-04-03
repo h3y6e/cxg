@@ -1,8 +1,8 @@
 [tagpr]
-releaseBranch = 'main'
-versionFile = 'skills/cxg/SKILL.md'
+releaseBranch = main
+versionFile = skills/cxg/SKILL.md
 vPrefix = true
-release = 'draft'
+release = draft
 changelog = false
-calendarVersioning = 'YYYY.MM.MICRO'
-command = 'mise run prerelease'
+calendarVersioning = YYYY.MM.MICRO
+command = "mise run prerelease"
