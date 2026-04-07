@@ -1,8 +1,9 @@
 # AGENTS.md
 
-`cxg` is a non-interactive Go CLI that validates and formats contextual commit
-messages. It never calls git itself -- on success it writes the validated message
-to stdout so the caller can pipe it to `git commit -F -`.
+`cxg` is a non-interactive Go CLI for contextual commit workflows.
+
+- `cxg lint` lints and formats messages and writes the linted message to stdout for lint-only workflows.
+- `cxg commit` fixes and lints the message first, then invokes `git commit` directly.
 
 ## Build / Lint / Test
 

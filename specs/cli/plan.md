@@ -1,11 +1,11 @@
 ---
 status: done
-summary: Execution plan for cxg CLI — Go-based contextual commit message validator with lint, fix, and JSON output
+summary: Execution plan for cxg CLI — Go-based contextual commit message linter with lint, fix, and JSON output
 ---
 
 ## Summary
 
-Build `cxg lint` as a non-interactive Go CLI using cobra. Accepts messages from `-m`, stdin, or file path; validates Conventional Commits subject + action lines; writes valid output to stdout (or JSON); writes errors to stderr. Supports `--fix` auto-correction and `--trailer` appending.
+Build `cxg lint` as a non-interactive Go CLI using cobra. Accepts messages from `-m`, stdin, or file path; lints Conventional Commits subject + action lines; writes lint-clean output to stdout (or JSON); writes errors to stderr. Supports `--fix` auto-correction and `--trailer` appending.
 
 ## Execution Context
 
@@ -25,7 +25,7 @@ Build `cxg lint` as a non-interactive Go CLI using cobra. Accepts messages from 
 - Fixed Conventional Commits type list: feat, fix, refactor, perf, test, docs, style, build, ci, chore, revert (FR-005)
 - Fixed action line types: intent, decision, rejected, constraint, learned (FR-006)
 - Multiple `-m` joined by blank lines matching `git commit` behavior (FR-008)
-- `--fix` mutates input before validation; invalid-after-fix still exits 1 (FR-010)
+- `--fix` mutates input before linting; invalid-after-fix still exits 1 (FR-010)
 
 ## Phase 1: Setup
 
@@ -55,15 +55,15 @@ Build `cxg lint` as a non-interactive Go CLI using cobra. Accepts messages from 
 
 ## Phase 3: Lint Command — P1 Stories
 
-- [x] T010 Implement subject validation: type list, optional scope, description, 72-char limit (FR-005, FR-013) [US1]
-- [x] T011 (P) Implement action line validation: `action-type(scope): description` format (FR-006) [US1]
+- [x] T010 Implement subject linting: type list, optional scope, description, 72-char limit (FR-005, FR-013) [US1]
+- [x] T011 (P) Implement action-line linting: `action-type(scope): description` format (FR-006) [US1]
 - [x] T012 Wire lint command: valid → write message to stdout + exit 0; invalid → write errors to stderr + exit 1 (FR-002, FR-003, FR-007) [US1, US2]
 
 ### DoD
 
 - [x] `cxg lint -m 'feat(auth): add login'` exits 0 and prints message [US1]
 - [x] `cxg lint -m 'bad message'` exits 1 and stderr shows error [US1]
-- [x] `cxg lint <filepath>` reads file and validates (commit-msg hook) [US2]
+- [x] `cxg lint <filepath>` reads file and lints it (commit-msg hook) [US2]
 - [x] `cxg lint -m 'feat: x' -m 'intent(x): why'` outputs joined message [US3]
 - [x] `go test ./...` passes
 
@@ -88,7 +88,7 @@ Build `cxg lint` as a non-interactive Go CLI using cobra. Accepts messages from 
 
 - [x] `cxg lint -m 'feat(auth): add login' | git commit -F -` creates a commit (SC-001)
 - [x] `cxg lint "$1"` works as `commit-msg` hook (SC-002)
-- [x] All examples from contextual-commit SKILL.md validate as valid (SC-003)
+- [x] All examples from contextual-commit SKILL.md pass linting (SC-003)
 - [x] `cxg lint --fix -m '...' | git commit -F -` pipeline works end-to-end (SC-004)
 - [x] `mise run check && go test ./...` passes with no failures
 
@@ -112,7 +112,7 @@ Build `cxg lint` as a non-interactive Go CLI using cobra. Accepts messages from 
   Validation: PASS (`go test ./internal/message/...`, `go test ./internal/...`)
   Next: T010
 - Task: T010-T012
-  Change: Implemented subject and action-line validation plus `lint` command stdout/stderr/exit behavior for flag, stdin-precedence, and file-path inputs.
+  Change: Implemented subject and action-line linting plus `lint` command stdout/stderr/exit behavior for flag, stdin-precedence, and file-path inputs.
   Doc Impact: local-only
   Validation: PASS (`go test ./internal/lint/...`, `go test ./cmd/...`)
   Next: T013
@@ -122,7 +122,7 @@ Build `cxg lint` as a non-interactive Go CLI using cobra. Accepts messages from 
   Validation: PASS (`go test ./internal/message/...`, `go test ./cmd/...`, `go test ./...`)
   Next: T015
 - Task: T015-T016
-  Change: Added end-to-end git pipeline and hook integration tests, validated contextual-commit skill examples, documented install/usage/hook workflows in README, and added `cmd/cxg/main.go` so `go build ./cmd/cxg` also succeeds.
+  Change: Added end-to-end git pipeline and hook integration tests, linted contextual-commit skill examples, documented install/usage/hook workflows in README, and added `cmd/cxg/main.go` so `go build ./cmd/cxg` also succeeds.
   Doc Impact: local-only
   Validation: PASS (`go test ./cmd/...`, `mise run check`, `go test ./...`, `go build .`, `go build ./cmd/cxg`)
   Next: close implementation

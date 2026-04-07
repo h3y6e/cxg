@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	cxglint "github.com/h3y6e/cxg/internal/lint"
+	internalcommit "github.com/h3y6e/cxg/internal/commit"
 	"github.com/h3y6e/cxg/internal/message"
 	"github.com/spf13/cobra"
 )
@@ -38,32 +38,28 @@ func newLintCmd(rootOpts *rootOptions) *cobra.Command {
 
 	cmd.Flags().StringArrayVarP(&opts.messages, "message", "m", nil, "Commit message paragraph (repeatable)")
 	cmd.Flags().StringArrayVar(&opts.trailers, "trailer", nil, "Trailer line to append (repeatable)")
-	cmd.Flags().BoolVar(&opts.fix, "fix", false, "Fix common formatting issues before validation")
+	cmd.Flags().BoolVar(&opts.fix, "fix", false, "Fix common formatting issues before linting")
 
 	return cmd
 }
 
 func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintOptions) error {
-	input := message.Input{
+	request := internalcommit.PrepareRequest{
 		Messages: opts.messages,
 		Stdin:    cmd.InOrStdin(),
 		HasStdin: hasReadableStdin(cmd),
 		Trailers: opts.trailers,
+		Fix:      opts.fix,
 	}
 	if len(args) > 0 {
-		input.FilePath = args[0]
+		request.FilePath = args[0]
 	}
 
-	value, err := message.Resolve(input)
+	prepared, err := internalcommit.Prepare(request)
 	if err != nil {
 		return err
 	}
-
-	if opts.fix {
-		value = message.Fix(value)
-	}
-
-	validationErrors := cxglint.Validate(value)
+	validationErrors := prepared.Errors
 	if len(validationErrors) > 0 {
 		if rootOpts.json {
 			return writeLintJSON(cmd, lintResponse{
@@ -72,17 +68,8 @@ func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintO
 			}, true)
 		}
 
-		for _, validationError := range validationErrors {
-			_, writeErr := fmt.Fprintf(
-				cmd.ErrOrStderr(),
-				"line %d [%s] %s\n",
-				validationError.Line,
-				validationError.Code,
-				validationError.Message,
-			)
-			if writeErr != nil {
-				return writeErr
-			}
+		if err := writeValidationErrors(cmd, validationErrors); err != nil {
+			return err
 		}
 
 		return ExitError{Code: 1}
@@ -91,12 +78,12 @@ func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintO
 	if rootOpts.json {
 		return writeLintJSON(cmd, lintResponse{
 			Valid:   true,
-			Message: value,
+			Message: prepared.Message,
 			Errors:  []message.ValidationError{},
 		}, false)
 	}
 
-	_, err = fmt.Fprint(cmd.OutOrStdout(), value)
+	_, err = fmt.Fprint(cmd.OutOrStdout(), prepared.Message)
 	return err
 }
 
@@ -126,6 +113,23 @@ func writeLintJSON(cmd *cobra.Command, response lintResponse, exitWithError bool
 	}
 	if exitWithError {
 		return ExitError{Code: 1}
+	}
+
+	return nil
+}
+
+func writeValidationErrors(cmd *cobra.Command, validationErrors []message.ValidationError) error {
+	for _, validationError := range validationErrors {
+		_, err := fmt.Fprintf(
+			cmd.ErrOrStderr(),
+			"line %d [%s] %s\n",
+			validationError.Line,
+			validationError.Code,
+			validationError.Message,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
