@@ -15,7 +15,7 @@ func NewRootCmd(version string) *cobra.Command {
 
 	root := &cobra.Command{
 		Use:           "cxg",
-		Short:         "Lint contextual commit messages for AI agents",
+		Short:         "Lint and commit contextual messages for AI agents",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version,
@@ -23,6 +23,7 @@ func NewRootCmd(version string) *cobra.Command {
 
 	root.PersistentFlags().BoolVar(&opts.json, "json", false, "Output machine-readable JSON")
 	root.AddCommand(newLintCmd(opts))
+	root.AddCommand(newCommitCmd(opts))
 
 	return root
 }

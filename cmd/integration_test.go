@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,6 +70,283 @@ func TestFixPipeline_CreatesNormalizedCommit(t *testing.T) {
 	}
 }
 
+func TestCommitCommand_CreatesCommitFromStagedChange(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	stageFile(t, repo, "README.md", "hello\n")
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "-m", "feat(auth): add login")
+	if err != nil {
+		t.Fatalf("runCxg() error = %v, stdout = %s, stderr = %s", err, stdout, stderr)
+	}
+
+	message := strings.TrimSpace(runGit(t, repo, "log", "-1", "--pretty=%B"))
+	if message != "feat(auth): add login" {
+		t.Fatalf("commit message = %q, want %q", message, "feat(auth): add login")
+	}
+}
+
+func TestCommitCommand_ValidationFailureDoesNotCreateCommit(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	stageFile(t, repo, "README.md", "hello\n")
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "-m", "bad message")
+	if err == nil {
+		t.Fatal("expected commit command to fail")
+	}
+	if stdout != "" {
+		t.Fatalf("stdout = %q, want empty", stdout)
+	}
+	if !strings.Contains(stderr, "invalid-subject") {
+		t.Fatalf("stderr = %q, want invalid-subject", stderr)
+	}
+
+	count := strings.TrimSpace(runGit(t, repo, "rev-list", "--count", "--all"))
+	if count != "0" {
+		t.Fatalf("commit count = %q, want %q", count, "0")
+	}
+}
+
+func TestCommitCommand_FixesMessageByDefault(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	stageFile(t, repo, "README.md", "hello\n")
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "-m", "feat(auth): add login.\nintent(auth): support social login")
+	if err != nil {
+		t.Fatalf("runCxg() error = %v, stdout = %s, stderr = %s", err, stdout, stderr)
+	}
+
+	want := "feat(auth): add login\n\nintent(auth): support social login"
+	message := strings.TrimSpace(runGit(t, repo, "log", "-1", "--pretty=%B"))
+	if message != want {
+		t.Fatalf("commit message = %q, want %q", message, want)
+	}
+}
+
+func TestCommitCommand_AllowEmptyCreatesCommit(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "--allow-empty", "-m", "chore(repo): initialize")
+	if err != nil {
+		t.Fatalf("runCxg() error = %v, stdout = %s, stderr = %s", err, stdout, stderr)
+	}
+
+	count := strings.TrimSpace(runGit(t, repo, "rev-list", "--count", "--all"))
+	if count != "1" {
+		t.Fatalf("commit count = %q, want %q", count, "1")
+	}
+}
+
+func TestCommitCommand_AllStagesTrackedChanges(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	writeCommittedFile(t, repo, "README.md", "before\n", "docs(repo): seed readme")
+	stageFile(t, repo, "README.md", "after\n")
+	runGit(t, repo, "reset", "HEAD", "README.md")
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "--all", "-m", "docs(readme): refresh usage")
+	if err != nil {
+		t.Fatalf("runCxg() error = %v, stdout = %s, stderr = %s", err, stdout, stderr)
+	}
+
+	content := runGit(t, repo, "show", "HEAD:README.md")
+	if content != "after\n" {
+		t.Fatalf("committed file = %q, want %q", content, "after\n")
+	}
+}
+
+func TestCommitCommand_AmendUpdatesPreviousCommitMessage(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	writeCommittedFile(t, repo, "README.md", "before\n", "docs(repo): seed readme")
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "--amend", "--allow-empty", "-m", "docs(readme): refresh usage")
+	if err != nil {
+		t.Fatalf("runCxg() error = %v, stdout = %s, stderr = %s", err, stdout, stderr)
+	}
+
+	count := strings.TrimSpace(runGit(t, repo, "rev-list", "--count", "--all"))
+	if count != "1" {
+		t.Fatalf("commit count = %q, want %q", count, "1")
+	}
+	message := strings.TrimSpace(runGit(t, repo, "log", "-1", "--pretty=%B"))
+	if message != "docs(readme): refresh usage" {
+		t.Fatalf("commit message = %q, want %q", message, "docs(readme): refresh usage")
+	}
+}
+
+func TestCommitCommand_SignoffAuthorAndDate(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	stageFile(t, repo, "README.md", "hello\n")
+
+	stdout, stderr, err := runCxg(
+		t,
+		repo,
+		binary,
+		"commit",
+		"--signoff",
+		"--author", "Author Name <author@example.com>",
+		"--date", "2026-04-06T12:34:56Z",
+		"-m", "feat(auth): add login",
+	)
+	if err != nil {
+		t.Fatalf("runCxg() error = %v, stdout = %s, stderr = %s", err, stdout, stderr)
+	}
+
+	author := strings.TrimSpace(runGit(t, repo, "log", "-1", "--pretty=%an <%ae>"))
+	if author != "Author Name <author@example.com>" {
+		t.Fatalf("author = %q, want %q", author, "Author Name <author@example.com>")
+	}
+	date := strings.TrimSpace(runGit(t, repo, "log", "-1", "--pretty=%aI"))
+	if date != "2026-04-06T12:34:56Z" {
+		t.Fatalf("date = %q, want %q", date, "2026-04-06T12:34:56Z")
+	}
+	message := strings.TrimSpace(runGit(t, repo, "log", "-1", "--pretty=%B"))
+	if !strings.Contains(message, "Signed-off-by: Test User <test@example.com>") {
+		t.Fatalf("message = %q, want Signed-off-by trailer", message)
+	}
+}
+
+func TestCommitCommand_HookFailureIsSurfaced(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	stageFile(t, repo, "README.md", "hello\n")
+
+	hookPath := filepath.Join(repo, ".git", "hooks", "pre-commit")
+	if err := os.WriteFile(hookPath, []byte("#!/bin/sh\necho blocked >&2\nexit 1\n"), 0o755); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "-m", "feat(auth): add login")
+	if err == nil {
+		t.Fatal("expected hook failure")
+	}
+	if stdout != "" {
+		t.Fatalf("stdout = %q, want empty", stdout)
+	}
+	if !strings.Contains(stderr, "blocked") {
+		t.Fatalf("stderr = %q, want hook output", stderr)
+	}
+}
+
+func TestCommitCommand_JSONSuccess(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	stageFile(t, repo, "README.md", "hello\n")
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "--json", "-m", "feat(auth): add login")
+	if err != nil {
+		t.Fatalf("runCxg() error = %v, stdout = %s, stderr = %s", err, stdout, stderr)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+
+	var got struct {
+		Valid     bool   `json:"valid"`
+		Committed bool   `json:"committed"`
+		Message   string `json:"message"`
+		Errors    []any  `json:"errors"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+	if !got.Valid || !got.Committed {
+		t.Fatalf("got = %#v, want valid and committed true", got)
+	}
+	if got.Message != "feat(auth): add login" {
+		t.Fatalf("Message = %q, want %q", got.Message, "feat(auth): add login")
+	}
+}
+
+func TestCommitCommand_JSONValidationFailure(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	stageFile(t, repo, "README.md", "hello\n")
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "--json", "-m", "bad message")
+	if err == nil {
+		t.Fatal("expected validation failure")
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+
+	var got struct {
+		Valid     bool `json:"valid"`
+		Committed bool `json:"committed"`
+		Errors    []struct {
+			Code string `json:"code"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+	if got.Valid || got.Committed {
+		t.Fatalf("got = %#v, want valid=false committed=false", got)
+	}
+	if len(got.Errors) != 1 || got.Errors[0].Code != "invalid-subject" {
+		t.Fatalf("Errors = %#v, want one invalid-subject error", got.Errors)
+	}
+}
+
+func TestCommitCommand_JSONGitFailure(t *testing.T) {
+	t.Parallel()
+
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+
+	stdout, stderr, err := runCxg(t, repo, binary, "commit", "--json", "-m", "feat(auth): add login")
+	if err == nil {
+		t.Fatal("expected git failure")
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+
+	var got struct {
+		Valid     bool `json:"valid"`
+		Committed bool `json:"committed"`
+		GitError  *struct {
+			ExitCode int    `json:"exitCode"`
+			Stderr   string `json:"stderr"`
+		} `json:"gitError"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+	if !got.Valid || got.Committed {
+		t.Fatalf("got = %#v, want valid=true committed=false", got)
+	}
+	if got.GitError == nil || got.GitError.ExitCode == 0 {
+		t.Fatalf("GitError = %#v, want non-zero exit code", got.GitError)
+	}
+}
+
 func TestContextualCommitSkillExamplesValidate(t *testing.T) {
 	t.Parallel()
 
@@ -124,6 +402,26 @@ func initGitRepo(t *testing.T) string {
 	return repo
 }
 
+func stageFile(t *testing.T, repo string, name string, content string) {
+	t.Helper()
+
+	path := filepath.Join(repo, name)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	runGit(t, repo, "add", name)
+}
+
+func writeCommittedFile(t *testing.T, repo string, name string, content string, message string) {
+	t.Helper()
+
+	stageFile(t, repo, name, content)
+	runGit(t, repo, "commit", "-m", message)
+}
+
 func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...string) string {
 	t.Helper()
 
@@ -174,4 +472,19 @@ func runGit(t *testing.T, repo string, args ...string) string {
 	}
 
 	return stdout.String()
+}
+
+func runCxg(t *testing.T, repo string, binary string, args ...string) (string, string, error) {
+	t.Helper()
+
+	command := exec.Command(binary, args...)
+	command.Dir = repo
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+
+	err := command.Run()
+	return stdout.String(), stderr.String(), err
 }

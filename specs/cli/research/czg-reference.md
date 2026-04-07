@@ -34,7 +34,7 @@ Default type list: `feat, fix, docs, style, refactor, perf, test, build, ci, cho
 
 ## Configuration (`.czrc` / `cz.config.js`)
 
-Relevant fields for cxg's validation logic:
+Relevant fields for cxg's lint logic:
 
 | Field | Default | Notes |
 |-------|---------|-------|
@@ -57,8 +57,8 @@ Relevant fields for cxg's validation logic:
 | Primary user | Human developer at terminal | AI agent in a pipeline |
 | Message composition | Wizard builds message | Message pre-assembled by caller |
 | Scope | Configurable per project | Fixed type list (spec FR-005) |
-| Body format | Free-form | Action lines validated (`intent`, `decision`, etc.) |
-| Fix mode | N/A | `--fix` auto-normalizes before validation |
+| Body format | Free-form | Action lines linted (`intent`, `decision`, etc.) |
+| Fix mode | N/A | `--fix` auto-normalizes before linting |
 | Output | Git commit created | Message to stdout; errors to stderr |
 
 ## What cxg Takes from czg
