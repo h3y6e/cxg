@@ -1,11 +1,11 @@
 # cxg
 
-Commit message linter for AI agents. Validates [Contextual Commits](https://github.com/berserkdisruptors/contextual-commits) format.
+Contextual commit CLI for AI agents. Lints [Contextual Commits](https://github.com/berserkdisruptors/contextual-commits) format and can create commits.
 
 ## Install
 
 ```sh
-go install github.com/h3y6e/cxg@v2026.4.3
+go install github.com/h3y6e/cxg@latest
 npx skills add h3y6e/cxg
 ```
 
@@ -14,6 +14,26 @@ npx skills add h3y6e/cxg
 If you're a human, there's nothing to do. AI agents will automatically use `cxg` when creating commits.
 
 See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules.
+
+```sh
+# lint and create a commit
+cxg commit -m 'feat(auth): add login' -m 'intent(auth): support social login'
+
+# machine-readable commit result
+cxg commit --json -m 'feat(auth): add login'
+```
+
+## Hook
+
+If a human wants local commit-message linting, `cxg lint` can be wired into `commit-msg` manually:
+
+```sh
+cat > .git/hooks/commit-msg <<'EOF'
+#!/bin/sh
+cxg lint "$1"
+EOF
+chmod +x .git/hooks/commit-msg
+```
 
 ## Development
 
