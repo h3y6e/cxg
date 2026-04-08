@@ -1,6 +1,6 @@
 # cxg
 
-Contextual commit CLI for AI agents. Lints [Contextual Commits](https://github.com/berserkdisruptors/contextual-commits) format and can create commits.
+**C**onte**x**tual **g**it commit CLI for AI Agents. Lints [Contextual Commits](https://github.com/berserkdisruptors/contextual-commits) messages and can create commits.
 
 ## Install
 
