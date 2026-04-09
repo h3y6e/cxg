@@ -3,6 +3,7 @@ package lint
 import (
 	"fmt"
 	"regexp"
+	"unicode/utf8"
 
 	"github.com/h3y6e/cxg/internal/message"
 )
@@ -24,11 +25,11 @@ func Validate(value string) []message.ValidationError {
 		}}
 	}
 
-	if len(parsed.Subject) > 72 {
+	if utf8.RuneCountInString(parsed.Subject) > 72 {
 		errors = append(errors, message.ValidationError{
 			Line:    1,
 			Code:    "subject-too-long",
-			Message: fmt.Sprintf("subject must be 72 characters or fewer, got %d", len(parsed.Subject)),
+			Message: fmt.Sprintf("subject must be 72 characters or fewer, got %d", utf8.RuneCountInString(parsed.Subject)),
 		})
 	}
 
