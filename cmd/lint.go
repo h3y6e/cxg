@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	internalcommit "github.com/h3y6e/cxg/internal/commit"
+	"github.com/h3y6e/cxg/internal/lint"
 	"github.com/h3y6e/cxg/internal/message"
 	"github.com/spf13/cobra"
 )
@@ -44,22 +44,26 @@ func newLintCmd(rootOpts *rootOptions) *cobra.Command {
 }
 
 func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintOptions) error {
-	request := internalcommit.PrepareRequest{
+	input := message.Input{
 		Messages: opts.messages,
 		Stdin:    cmd.InOrStdin(),
 		HasStdin: hasReadableStdin(cmd),
 		Trailers: opts.trailers,
-		Fix:      opts.fix,
 	}
 	if len(args) > 0 {
-		request.FilePath = args[0]
+		input.FilePath = args[0]
 	}
 
-	prepared, err := internalcommit.Prepare(request)
+	msg, err := message.Resolve(input)
 	if err != nil {
 		return err
 	}
-	validationErrors := prepared.Errors
+
+	if opts.fix {
+		msg = message.Fix(msg)
+	}
+
+	validationErrors := lint.Validate(msg)
 	if len(validationErrors) > 0 {
 		if rootOpts.json {
 			return writeLintJSON(cmd, lintResponse{
@@ -78,12 +82,12 @@ func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintO
 	if rootOpts.json {
 		return writeLintJSON(cmd, lintResponse{
 			Valid:   true,
-			Message: prepared.Message,
+			Message: msg,
 			Errors:  []message.ValidationError{},
 		}, false)
 	}
 
-	_, err = fmt.Fprint(cmd.OutOrStdout(), prepared.Message)
+	_, err = fmt.Fprint(cmd.OutOrStdout(), msg)
 	return err
 }
 
