@@ -23,6 +23,7 @@ func NewRootCmd(version string) *cobra.Command {
 
 	root.PersistentFlags().BoolVar(&opts.json, "json", false, "Output machine-readable JSON")
 	root.AddCommand(newLintCmd(opts))
+	root.AddCommand(newRecallCmd(opts))
 
 	return root
 }
