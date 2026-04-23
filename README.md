@@ -6,7 +6,7 @@
 
 ```sh
 go install github.com/h3y6e/cxg@latest
-npx skills add h3y6e/cxg
+gh skill install h3y6e/cxg
 ```
 
 ## Usage
