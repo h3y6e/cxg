@@ -7,13 +7,14 @@
 
 ## Build / Lint / Test
 
-Task runner: mise (see `mise.toml`). All CI runs through mise tasks.
+Dev environment: Nix flake (see `flake.nix`). All CI runs through `nix develop`.
 
 ```sh
-mise run build          # go build -o cxg .
-mise run check          # test -z "$(gofmt -l .)" && go vet ./... && staticcheck ./...
-mise run fmt            # gofmt -w .
-mise run test           # go test ./...
+nix develop -c go build -o cxg .                          # Build
+nix flake check                                           # Formatting check (treefmt: gofmt + nixfmt)
+nix develop -c sh -c 'go vet ./... && staticcheck ./...'  # Lint
+nix develop -c sh -c 'nix fmt'                            # Format (gofmt + nixfmt via treefmt)
+nix develop -c go test ./...                              # Test
 ```
 
 ## Architecture Conventions
