@@ -25,10 +25,12 @@ See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules.
 
 ## Development
 
-Requires [mise](https://mise.jdx.dev/).
+Requires [Nix](https://nixos.org/) with flakes enabled.
 
 ```sh
-mise run check   # gofmt + go vet + staticcheck
-mise run test    # Run tests
-mise run build   # Build binary
+nix develop                                          # Enter dev shell
+nix flake check                                      # Formatting check (treefmt)
+nix develop -c sh -c 'go vet ./... && staticcheck ./...'  # Lint
+nix develop -c go test ./...                         # Run tests
+nix develop -c go build -o cxg .                     # Build binary
 ```
