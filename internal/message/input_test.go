@@ -55,6 +55,7 @@ func TestResolve_JoinsMessagesAndAppendsTrailers(t *testing.T) {
 		Messages: []string{
 			"feat(auth): add login",
 			"intent(auth): support social login",
+			"decision(auth): keep OAuth optional",
 		},
 		Trailers: []string{
 			"Co-authored-by: Alice <alice@example.com>",
@@ -68,6 +69,7 @@ func TestResolve_JoinsMessagesAndAppendsTrailers(t *testing.T) {
 		"feat(auth): add login",
 		"",
 		"intent(auth): support social login",
+		"decision(auth): keep OAuth optional",
 		"",
 		"Co-authored-by: Alice <alice@example.com>",
 	}, "\n")

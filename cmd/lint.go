@@ -36,7 +36,7 @@ func newLintCmd(rootOpts *rootOptions) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&opts.messages, "message", "m", nil, "Commit message paragraph (repeatable)")
+	cmd.Flags().StringArrayVarP(&opts.messages, "message", "m", nil, "Commit message line (repeatable)")
 	cmd.Flags().StringArrayVar(&opts.trailers, "trailer", nil, "Trailer line to append (repeatable)")
 	cmd.Flags().BoolVar(&opts.fix, "fix", false, "Fix common formatting issues before linting")
 

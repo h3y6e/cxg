@@ -17,9 +17,18 @@ func TestPipeline_CreatesCommitFromLintOutput(t *testing.T) {
 	binary := buildCxgBinary(t)
 	repo := initGitRepo(t)
 
-	commitMessage := pipeLintToGitCommit(t, repo, binary, "lint", "-m", "feat(auth): add login")
-	if commitMessage != "feat(auth): add login" {
-		t.Fatalf("commit message = %q, want %q", commitMessage, "feat(auth): add login")
+	commitMessage := pipeLintToGitCommit(
+		t,
+		repo,
+		binary,
+		"lint",
+		"-m", "feat(auth): add login",
+		"-m", "intent(auth): support social login",
+		"-m", "decision(auth): keep OAuth optional",
+	)
+	want := "feat(auth): add login\n\nintent(auth): support social login\ndecision(auth): keep OAuth optional"
+	if commitMessage != want {
+		t.Fatalf("commit message = %q, want %q", commitMessage, want)
 	}
 }
 
@@ -120,6 +129,7 @@ func initGitRepo(t *testing.T) string {
 	runGit(t, repo, "init")
 	runGit(t, repo, "config", "user.name", "Test User")
 	runGit(t, repo, "config", "user.email", "test@example.com")
+	runGit(t, repo, "config", "commit.gpgsign", "false")
 
 	return repo
 }
