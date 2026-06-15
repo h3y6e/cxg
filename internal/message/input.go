@@ -20,7 +20,7 @@ type Input struct {
 func Resolve(input Input) (string, error) {
 	switch {
 	case len(input.Messages) > 0:
-		return appendTrailers(strings.Join(input.Messages, "\n\n"), input.Trailers), nil
+		return appendTrailers(joinMessageFlags(input.Messages), input.Trailers), nil
 	case input.HasStdin:
 		content, err := io.ReadAll(input.Stdin)
 		if err != nil {
@@ -38,6 +38,14 @@ func Resolve(input Input) (string, error) {
 	default:
 		return "", ErrNoInput
 	}
+}
+
+func joinMessageFlags(messages []string) string {
+	if len(messages) == 1 {
+		return messages[0]
+	}
+
+	return messages[0] + "\n\n" + strings.Join(messages[1:], "\n")
 }
 
 func appendTrailers(message string, trailers []string) string {
