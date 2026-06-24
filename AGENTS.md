@@ -3,7 +3,7 @@
 `cxg` is a non-interactive Go CLI for contextual commit workflows.
 
 - `cxg lint` lints and formats messages and writes the linted message to stdout for lint-only workflows.
-- `cxg commit` fixes and lints the message first, then invokes `git commit` directly.
+- `cxg recall [scope | action(scope)]` extracts action lines from commit history; no argument uses branch context.
 
 ## Build / Lint / Test
 
