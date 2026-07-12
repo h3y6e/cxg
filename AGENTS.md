@@ -11,7 +11,7 @@ Task runner: mise (see `mise.toml`). All CI runs through mise tasks.
 
 ```sh
 mise run build          # go build -o cxg .
-mise run check          # test -z "$(gofmt -l .)" && go vet ./... && staticcheck ./...
+mise run check          # Formatting, modernization, vet, static analysis, and vulnerability checks
 mise run fmt            # gofmt -w .
 mise run test           # go test ./...
 ```

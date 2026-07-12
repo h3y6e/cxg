@@ -49,7 +49,7 @@ func TestLintCommand_WritesValidationErrorsToStderr(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("stdout = %q, want empty", stdout)
 	}
-	if !errors.As(err, new(exitError)) {
+	if _, ok := errors.AsType[exitError](err); !ok {
 		t.Fatalf("expected exitError, got %v", err)
 	}
 	if !strings.Contains(stderr, "invalid-subject") {
@@ -144,7 +144,7 @@ func TestLintCommand_FixStillFailsWhenMessageRemainsInvalid(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("stdout = %q, want empty", stdout)
 	}
-	if !errors.As(err, new(exitError)) {
+	if _, ok := errors.AsType[exitError](err); !ok {
 		t.Fatalf("expected exitError, got %v", err)
 	}
 	if !strings.Contains(stderr, "invalid-subject") {
@@ -195,7 +195,7 @@ func TestLintCommand_JSONOutputsStructuredFailure(t *testing.T) {
 		"--json",
 		"-m", "bad message",
 	}, "")
-	if !errors.As(err, new(exitError)) {
+	if _, ok := errors.AsType[exitError](err); !ok {
 		t.Fatalf("expected exitError, got %v", err)
 	}
 	if stderr != "" {

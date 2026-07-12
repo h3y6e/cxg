@@ -40,9 +40,8 @@ func Run(options Options, runner Runner) int {
 		return 0
 	}
 
-	var exitError exitError
-	if errors.As(err, &exitError) {
-		return exitError.code
+	if exitErr, ok := errors.AsType[exitError](err); ok {
+		return exitErr.code
 	}
 
 	_, _ = fmt.Fprintln(command.ErrOrStderr(), err)

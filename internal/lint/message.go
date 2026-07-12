@@ -98,12 +98,11 @@ func trimTrailingEmptyLines(lines []messageLine) []messageLine {
 }
 
 func isTrailerLine(line string) bool {
-	colon := strings.IndexByte(line, ':')
-	if colon <= 0 || colon == len(line)-1 {
+	token, value, ok := strings.Cut(line, ":")
+	if !ok || token == "" || value == "" {
 		return false
 	}
 
-	token := line[:colon]
 	if strings.ContainsAny(token, "()") {
 		return false
 	}
@@ -114,5 +113,5 @@ func isTrailerLine(line string) bool {
 		return false
 	}
 
-	return line[colon+1] == ' '
+	return value[0] == ' '
 }
