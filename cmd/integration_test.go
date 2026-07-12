@@ -44,7 +44,7 @@ func TestCommitMsgHook_RejectsInvalidMessage(t *testing.T) {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 
-	command := exec.Command("git", "commit", "--allow-empty", "-m", "bad message")
+	command := exec.CommandContext(t.Context(), "git", "commit", "--allow-empty", "-m", "bad message")
 	command.Dir = repo
 
 	var stderr bytes.Buffer
@@ -81,6 +81,7 @@ func TestFixPipeline_CreatesNormalizedCommit(t *testing.T) {
 func TestContextualCommitSkillExamplesValidate(t *testing.T) {
 	t.Parallel()
 
+	linter := cxglint.New(os.ReadFile)
 	skillPath := filepath.Join("..", "specs", "cli", "research", "contextual-commit", "SKILL.md")
 	content, err := os.ReadFile(skillPath)
 	if err != nil {
@@ -99,9 +100,12 @@ func TestContextualCommitSkillExamplesValidate(t *testing.T) {
 			t.Fatalf("skill file is missing expected example:\n%s", example)
 		}
 
-		errors := cxglint.Validate(example)
-		if len(errors) != 0 {
-			t.Fatalf("example should validate without errors, got %#v\nexample:\n%s", errors, example)
+		result, err := linter.Run(cxglint.Input{Messages: []string{example}})
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+		if len(result.Violations) != 0 {
+			t.Fatalf("example should validate without violations, got %#v\nexample:\n%s", result.Violations, example)
 		}
 	}
 }
@@ -110,7 +114,7 @@ func buildCxgBinary(t *testing.T) string {
 	t.Helper()
 
 	binary := filepath.Join(t.TempDir(), "cxg")
-	command := exec.Command("go", "build", "-o", binary, ".")
+	command := exec.CommandContext(t.Context(), "go", "build", "-o", binary, ".")
 	command.Dir = ".."
 
 	var stderr bytes.Buffer
@@ -137,7 +141,7 @@ func initGitRepo(t *testing.T) string {
 func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...string) string {
 	t.Helper()
 
-	lintCommand := exec.Command(binary, args...)
+	lintCommand := exec.CommandContext(t.Context(), binary, args...)
 	lintCommand.Dir = repo
 
 	pipe, err := lintCommand.StdoutPipe()
@@ -148,7 +152,7 @@ func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...strin
 	var lintStderr bytes.Buffer
 	lintCommand.Stderr = &lintStderr
 
-	commitCommand := exec.Command("git", "commit", "--allow-empty", "-F", "-")
+	commitCommand := exec.CommandContext(t.Context(), "git", "commit", "--allow-empty", "-F", "-")
 	commitCommand.Dir = repo
 	commitCommand.Stdin = pipe
 
@@ -158,11 +162,13 @@ func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...strin
 	if err := lintCommand.Start(); err != nil {
 		t.Fatalf("lint Start() error = %v", err)
 	}
-	if err := commitCommand.Run(); err != nil {
-		t.Fatalf("git commit error = %v, lint stderr = %s, git stderr = %s", err, lintStderr.String(), commitStderr.String())
+	commitErr := commitCommand.Run()
+	lintErr := lintCommand.Wait()
+	if commitErr != nil {
+		t.Fatalf("git commit error = %v, lint stderr = %s, git stderr = %s", commitErr, lintStderr.String(), commitStderr.String())
 	}
-	if err := lintCommand.Wait(); err != nil {
-		t.Fatalf("lint Wait() error = %v, lint stderr = %s", err, lintStderr.String())
+	if lintErr != nil {
+		t.Fatalf("lint Wait() error = %v, lint stderr = %s", lintErr, lintStderr.String())
 	}
 
 	return strings.TrimSpace(runGit(t, repo, "log", "-1", "--pretty=%B"))
@@ -171,7 +177,7 @@ func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...strin
 func runGit(t *testing.T, repo string, args ...string) string {
 	t.Helper()
 
-	command := exec.Command("git", args...)
+	command := exec.CommandContext(t.Context(), "git", args...)
 	command.Dir = repo
 
 	var stdout bytes.Buffer
