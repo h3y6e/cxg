@@ -4,12 +4,20 @@ import (
 	"os"
 
 	"github.com/h3y6e/cxg/cmd"
+	"github.com/h3y6e/cxg/internal/lint"
 )
 
 var version = "dev"
 
 func main() {
-	if err := cmd.Execute(version); err != nil {
-		os.Exit(1)
+	code := cmd.Run(cmd.Options{
+		Version: version,
+		Args:    os.Args[1:],
+		Stdin:   os.Stdin,
+		Stdout:  os.Stdout,
+		Stderr:  os.Stderr,
+	}, lint.New(os.ReadFile))
+	if code != 0 {
+		os.Exit(code)
 	}
 }

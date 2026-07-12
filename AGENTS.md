@@ -18,6 +18,8 @@ mise run test           # go test ./...
 
 ## Architecture Conventions
 
-- `cmd/` handles CLI concerns (flags, I/O, JSON marshaling). 
-- Delegates all logic to `internal/`.
+- `internal/lint` is the hexagonal core and owns the complete lint workflow.
+- `cmd/` is the driving adapter and owns Cobra, terminal detection, presentation, and exit status.
+- Composition roots inject driven adapters such as `os.ReadFile`; the core must not import OS or CLI packages.
+- Define narrow ports where they are consumed and use manual constructor injection.
 - No global state. Commands accept options structs.

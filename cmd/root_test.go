@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"bytes"
+	"os"
 	"testing"
+
+	"github.com/h3y6e/cxg/internal/lint"
 )
 
 func TestRootCommand_HelpIncludesLintCommand(t *testing.T) {
-	cmd := NewRootCmd("dev")
+	cmd := newRootCmd("dev", lint.New(os.ReadFile))
 	cmd.SetArgs([]string{"--help"})
 
 	var stdout bytes.Buffer
@@ -30,7 +33,7 @@ func TestRootCommand_HelpIncludesLintCommand(t *testing.T) {
 }
 
 func TestLintCommand_HelpPrintsUsage(t *testing.T) {
-	cmd := NewRootCmd("dev")
+	cmd := newRootCmd("dev", lint.New(os.ReadFile))
 	cmd.SetArgs([]string{"lint", "--help"})
 
 	var stdout bytes.Buffer

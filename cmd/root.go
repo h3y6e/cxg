@@ -1,16 +1,19 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/h3y6e/cxg/internal/lint"
+	"github.com/spf13/cobra"
+)
 
 type rootOptions struct {
 	json bool
 }
 
-func Execute(version string) error {
-	return NewRootCmd(version).Execute()
+type Runner interface {
+	Run(lint.Input) (lint.Result, error)
 }
 
-func NewRootCmd(version string) *cobra.Command {
+func newRootCmd(version string, runner Runner) *cobra.Command {
 	opts := &rootOptions{}
 
 	root := &cobra.Command{
@@ -22,7 +25,7 @@ func NewRootCmd(version string) *cobra.Command {
 	}
 
 	root.PersistentFlags().BoolVar(&opts.json, "json", false, "Output machine-readable JSON")
-	root.AddCommand(newLintCmd(opts))
+	root.AddCommand(newLintCmd(opts, runner))
 
 	return root
 }

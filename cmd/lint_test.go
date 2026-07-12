@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/h3y6e/cxg/internal/lint"
 )
 
 func TestLintCommand_WritesValidMessageToStdout(t *testing.T) {
@@ -47,8 +49,8 @@ func TestLintCommand_WritesValidationErrorsToStderr(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("stdout = %q, want empty", stdout)
 	}
-	if !errors.As(err, new(ExitError)) {
-		t.Fatalf("expected ExitError, got %v", err)
+	if !errors.As(err, new(exitError)) {
+		t.Fatalf("expected exitError, got %v", err)
 	}
 	if !strings.Contains(stderr, "invalid-subject") {
 		t.Fatalf("stderr = %q, want invalid-subject", stderr)
@@ -142,8 +144,8 @@ func TestLintCommand_FixStillFailsWhenMessageRemainsInvalid(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("stdout = %q, want empty", stdout)
 	}
-	if !errors.As(err, new(ExitError)) {
-		t.Fatalf("expected ExitError, got %v", err)
+	if !errors.As(err, new(exitError)) {
+		t.Fatalf("expected exitError, got %v", err)
 	}
 	if !strings.Contains(stderr, "invalid-subject") {
 		t.Fatalf("stderr = %q, want invalid-subject", stderr)
@@ -193,8 +195,8 @@ func TestLintCommand_JSONOutputsStructuredFailure(t *testing.T) {
 		"--json",
 		"-m", "bad message",
 	}, "")
-	if !errors.As(err, new(ExitError)) {
-		t.Fatalf("expected ExitError, got %v", err)
+	if !errors.As(err, new(exitError)) {
+		t.Fatalf("expected exitError, got %v", err)
 	}
 	if stderr != "" {
 		t.Fatalf("stderr = %q, want empty", stderr)
@@ -221,7 +223,7 @@ func TestLintCommand_JSONOutputsStructuredFailure(t *testing.T) {
 func executeLint(t *testing.T, args []string, stdin string) (string, string, error) {
 	t.Helper()
 
-	cmd := NewRootCmd("dev")
+	cmd := newRootCmd("dev", lint.New(os.ReadFile))
 	cmd.SetArgs(args)
 	if stdin != "" {
 		cmd.SetIn(strings.NewReader(stdin))

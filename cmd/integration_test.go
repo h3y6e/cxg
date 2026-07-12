@@ -81,6 +81,7 @@ func TestFixPipeline_CreatesNormalizedCommit(t *testing.T) {
 func TestContextualCommitSkillExamplesValidate(t *testing.T) {
 	t.Parallel()
 
+	linter := cxglint.New(os.ReadFile)
 	skillPath := filepath.Join("..", "specs", "cli", "research", "contextual-commit", "SKILL.md")
 	content, err := os.ReadFile(skillPath)
 	if err != nil {
@@ -99,9 +100,12 @@ func TestContextualCommitSkillExamplesValidate(t *testing.T) {
 			t.Fatalf("skill file is missing expected example:\n%s", example)
 		}
 
-		errors := cxglint.Validate(example)
-		if len(errors) != 0 {
-			t.Fatalf("example should validate without errors, got %#v\nexample:\n%s", errors, example)
+		result, err := linter.Run(cxglint.Input{Messages: []string{example}})
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+		if len(result.Violations) != 0 {
+			t.Fatalf("example should validate without violations, got %#v\nexample:\n%s", result.Violations, example)
 		}
 	}
 }
