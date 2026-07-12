@@ -11,7 +11,7 @@ var version = "dev"
 
 func main() {
 	code := cmd.Run(cmd.Options{
-		Version: version,
+		Version: cmd.Version(version),
 		Args:    os.Args[1:],
 		Stdin:   os.Stdin,
 		Stdout:  os.Stdout,

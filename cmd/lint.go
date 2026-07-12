@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"io"
 	"os"
 
@@ -20,7 +21,7 @@ func newLintCmd(rootOpts *rootOptions, runner Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "lint [file]",
 		Short: "Validate a contextual commit message",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  usageArgs(cobra.MaximumNArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLint(cmd, args, *rootOpts, opts, runner)
 		},
@@ -39,15 +40,17 @@ func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintO
 		Trailers: opts.trailers,
 		Fix:      opts.fix,
 	}
-	if hasReadableStdin(cmd) {
-		input.Stdin = cmd.InOrStdin()
-	}
 	if len(args) > 0 {
 		input.FilePath = args[0]
+	} else if stdin := cmd.InOrStdin(); hasReadableStdin(stdin) {
+		input.Stdin = stdin
 	}
 
 	result, err := runner.Run(input)
 	if err != nil {
+		if errors.Is(err, lint.ErrNoInput) {
+			return usageError(err)
+		}
 		return err
 	}
 
@@ -72,12 +75,13 @@ func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintO
 	return err
 }
 
-func hasReadableStdin(cmd *cobra.Command) bool {
-	if cmd.InOrStdin() != os.Stdin {
+func hasReadableStdin(reader io.Reader) bool {
+	file, ok := reader.(*os.File)
+	if !ok {
 		return true
 	}
 
-	stat, err := os.Stdin.Stat()
+	stat, err := file.Stat()
 	if err != nil {
 		return false
 	}

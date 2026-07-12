@@ -15,16 +15,32 @@ type Options struct {
 }
 
 type exitError struct {
-	code int
+	code  int
+	cause error
 }
 
 func (err exitError) Error() string {
+	if err.cause != nil {
+		return err.cause.Error()
+	}
 	return fmt.Sprintf("exit %d", err.code)
+}
+
+func (err exitError) Unwrap() error {
+	return err.cause
+}
+
+func usageError(err error) error {
+	return exitError{code: 2, cause: err}
 }
 
 func Run(options Options, runner Runner) int {
 	command := newRootCmd(options.Version, runner)
-	command.SetArgs(options.Args)
+	args := options.Args
+	if args == nil {
+		args = []string{}
+	}
+	command.SetArgs(args)
 	if options.Stdin != nil {
 		command.SetIn(options.Stdin)
 	}
@@ -41,6 +57,9 @@ func Run(options Options, runner Runner) int {
 	}
 
 	if exitErr, ok := errors.AsType[exitError](err); ok {
+		if exitErr.cause != nil {
+			_, _ = fmt.Fprintln(command.ErrOrStderr(), exitErr.cause)
+		}
 		return exitErr.code
 	}
 
