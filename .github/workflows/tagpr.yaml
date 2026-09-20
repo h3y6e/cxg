@@ -59,3 +59,6 @@ jobs:
           artifacts: dist/cxg_*.tar.gz dist/cxg_*.zip
           bin: cxg
           resources: skill/cxg=repo:skills/cxg
+      - run: gh release edit "${{ needs.tagpr.outputs.tag }}" --draft=false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
