@@ -5,11 +5,17 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      backfill_tag:
+        description: Existing release tag to re-sign as cxg.h3y6e.com
+        required: false
+        default: ""
 
 permissions: {}
 
 jobs:
   tagpr:
+    if: github.event_name != 'workflow_dispatch' || inputs.backfill_tag == ''
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
@@ -55,6 +61,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: jdx/packslip@74c75db7d611b36dd5a157999ec16cf823ccf80c # v1.2.0
         with:
+          project: cxg.h3y6e.com
           tag: ${{ needs.tagpr.outputs.tag }}
           artifacts: dist/cxg_*.tar.gz dist/cxg_*.zip
           bin: cxg
@@ -62,3 +69,37 @@ jobs:
       - run: gh release edit "${{ needs.tagpr.outputs.tag }}" --draft=false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  backfill:
+    if: github.event_name == 'workflow_dispatch' && inputs.backfill_tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.backfill_tag }}
+          fetch-depth: 0
+      - id: rev
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: jdx/packslip@74c75db7d611b36dd5a157999ec16cf823ccf80c # v1.2.0
+        with:
+          project: cxg.h3y6e.com
+          tag: ${{ inputs.backfill_tag }}
+          commit: ${{ steps.rev.outputs.commit }}
+          download: cxg_*.tar.gz cxg_*.zip
+          bin: cxg
+          resources: skill/cxg=repo:skills/cxg
+          attest: link
+
+  publish-list:
+    needs: [release, backfill]
+    if: always() && (needs.release.result == 'success' || needs.backfill.result == 'success')
+    uses: ./.github/workflows/packslip-list.yaml
+    permissions:
+      contents: read
+      id-token: write
+      pages: write

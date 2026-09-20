@@ -7,9 +7,20 @@
 With [mise](https://mise.jdx.dev):
 
 ```sh
-mise use -g packslip:github.com/h3y6e/cxg
+mise use -g --tool-option 'identity_prefix=https://github.com/h3y6e/cxg/' \
+  --tool-option 'issuer=https://token.actions.githubusercontent.com' \
+  packslip:cxg.h3y6e.com
 mise skills sync -g
 ```
+
+```toml
+[tools]
+"packslip:cxg.h3y6e.com" = { version = "latest", identity_prefix = "https://github.com/h3y6e/cxg/", issuer = "https://token.actions.githubusercontent.com" }
+```
+
+Artifacts stay on GitHub Releases; discovery uses the signed list at
+`https://cxg.h3y6e.com/.well-known/packslip.json`. Domain projects need the
+signer pin above — the domain name alone does not imply one.
 
 Or install each piece yourself:
 

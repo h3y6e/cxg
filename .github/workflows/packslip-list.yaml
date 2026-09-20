@@ -1,0 +1,89 @@
+name: packslip-list
+
+on:
+  workflow_call:
+    inputs:
+      yank:
+        type: string
+        required: false
+        default: ""
+      security:
+        type: string
+        required: false
+        default: ""
+      latest:
+        type: string
+        required: false
+        default: ""
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      yank:
+        description: Releases to withdraw, one per line, as TAG=REASON
+        required: false
+        default: ""
+      security:
+        description: Releases that fix a vulnerability, one tag or URL per line
+        required: false
+        default: ""
+      latest:
+        description: Exact listed version to recommend for unconstrained latest
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: packslip-list
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Collect release bundles
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p lists
+          gh release list --limit 100 --json tagName,isDraft \
+            --jq '.[] | select(.isDraft|not) | .tagName' \
+            | while IFS= read -r tag; do
+                mkdir -p "lists/${tag}"
+                if ! gh release download "${tag}" -p packslip.sigstore.json -D "lists/${tag}"; then
+                  rm -rf "lists/${tag}"
+                fi
+              done
+          find lists -type f -name packslip.sigstore.json | sort
+      - uses: jdx/packslip/releases@74c75db7d611b36dd5a157999ec16cf823ccf80c # v1.2.0
+        id: list
+        with:
+          project: cxg.h3y6e.com
+          dir: lists
+          url-base: https://github.com/h3y6e/cxg/releases/download
+          yank: ${{ inputs.yank }}
+          security: ${{ inputs.security }}
+          latest: ${{ inputs.latest }}
+      - name: Stage Pages site
+        run: |
+          set -euo pipefail
+          mkdir -p site/.well-known
+          cp "${{ steps.list.outputs.list }}" site/.well-known/packslip.json
+          printf '%s\n' 'cxg.h3y6e.com' > site/CNAME
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+          name: github-pages
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
