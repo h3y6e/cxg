@@ -5,7 +5,7 @@ compatibility: Requires git and cxg.
 license: MIT
 metadata:
   author: h3y6e
-  version: "2026.7.0"
+  version: "2026.9.0"
 ---
 
 # cxg
