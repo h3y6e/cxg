@@ -1,14 +1,14 @@
 ---
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent AskUserQuestion
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 description: Golang struct and interface design patterns — composition, embedding, type assertions, type switches, interface segregation, dependency injection via interfaces, struct field tags, and pointer vs value receivers. Use this skill when designing Go types, defining or implementing interfaces, embedding structs or interfaces, writing type assertions or type switches, adding struct field tags for JSON/YAML/DB serialization, or choosing between pointer and value receivers. Also use when the user asks about "accept interfaces, return structs", compile-time interface checks, or composing small interfaces into larger ones.
 license: MIT
 metadata:
     author: samber
     github-path: skills/golang-structs-interfaces
-    github-ref: refs/tags/v1.7.0
+    github-ref: refs/tags/v2.0.0
     github-repo: https://github.com/samber/cc-skills-golang
-    github-tree-sha: 03125b1d98c4bb0d97726b2609a843df3d8840dd
+    github-tree-sha: d7b80554cac6c9e811c867f9b2ecf23edf115a37
     openclaw:
         emoji: "\U0001F9E9"
         homepage: https://github.com/samber/cc-skills-golang
@@ -16,8 +16,10 @@ metadata:
         requires:
             bins:
                 - go
-    version: 1.1.3
+    version: 1.2.0
 name: golang-structs-interfaces
+paths:
+    - '**/*.go'
 user-invocable: true
 ---
 **Persona:** You are a Go type system designer. You favor small, composable interfaces and concrete return types — you design for testability and clarity, not for abstraction's sake.
@@ -367,6 +369,7 @@ func process(pool ConnPool) { ... }
 - → See `samber/cc-skills-golang@golang-design-patterns` skill for functional options, constructors, and builder patterns
 - → See `samber/cc-skills-golang@golang-dependency-injection` skill for DI patterns using interfaces
 - → See `samber/cc-skills-golang@golang-code-style` skill for value vs pointer function parameters (distinct from receivers)
+- → See `samber/cc-skills-golang@golang-gopls` skill for safe rename and the `implementInterface` code action — renaming a method or receiver that participates in interface satisfaction updates every call site and refuses a rename that would silently break the interface, which grep/sed cannot detect
 
 ## Common Mistakes
 

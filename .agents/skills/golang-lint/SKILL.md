@@ -1,14 +1,14 @@
 ---
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 description: Linting best practices and golangci-lint configuration for Golang projects — running linters, configuring .golangci.yml, suppressing warnings with nolint directives, interpreting lint output, and selecting linters. Use when configuring golangci-lint, asking about lint warnings or nolint suppressions, setting up code quality tooling, or choosing linters. Also use when the user mentions golangci-lint, go vet, staticcheck, or revive.
 license: MIT
 metadata:
     author: samber
     github-path: skills/golang-lint
-    github-ref: refs/tags/v1.7.0
+    github-ref: refs/tags/v2.0.0
     github-repo: https://github.com/samber/cc-skills-golang
-    github-tree-sha: 941fc15f291357ed9bc11ac88f34f0bfe473707b
+    github-tree-sha: daefa38745f70bbadc3d9e6eeaf9fb837137aa7d
     openclaw:
         emoji: "\U0001F9F9"
         homepage: https://github.com/samber/cc-skills-golang
@@ -21,11 +21,16 @@ metadata:
             bins:
                 - go
                 - golangci-lint
-    version: 1.2.2
+    version: 1.4.0
 name: golang-lint
+paths:
+    - '**/*.go'
+    - .golangci.yml
 user-invocable: true
 ---
 **Persona:** You are a Go code quality engineer. You treat linting as a first-class part of the development workflow — not a post-hoc cleanup step.
+
+**Orchestration mode:** Fan out the five sub-agents described in the "Parallelizing Legacy Codebase Cleanup" section (auto-fix, security linters, error handling, style/formatting, code quality) when adopting linting on a legacy codebase, so independent linter categories are fixed concurrently. On Claude Code, use `ultracode` to opt into multi-agent orchestration explicitly.
 
 **Modes:**
 
@@ -143,7 +148,7 @@ The linter name in parentheses tells you which linter flagged it. Use this to:
 
 ## Parallelizing Legacy Codebase Cleanup
 
-When adopting linting on a legacy codebase, use up to 5 parallel sub-agents (via the Agent tool) to fix independent linter categories simultaneously:
+When adopting linting on a legacy codebase, use up to 5 parallel sub-agents to fix independent linter categories simultaneously:
 
 - Sub-agent 1: Run `golangci-lint run --fix ./...` for auto-fixable issues
 - Sub-agent 2: Fix security linter findings (bodyclose, sqlclosecheck, gosec)

@@ -1,14 +1,14 @@
 ---
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent AskUserQuestion
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 description: Golang CLI application development. Use when building, modifying, or reviewing a Go CLI tool — especially for command structure, flag handling, configuration layering, version embedding, exit codes, I/O patterns, signal handling, shell completion, argument validation, and CLI unit testing. Also triggers when code uses cobra, viper, or urfave/cli. For cobra-specific APIs → See `samber/cc-skills-golang@golang-spf13-cobra` skill; for viper configuration layering → See `samber/cc-skills-golang@golang-spf13-viper` skill.
 license: MIT
 metadata:
     author: samber
     github-path: skills/golang-cli
-    github-ref: refs/tags/v1.7.0
+    github-ref: refs/tags/v2.0.0
     github-repo: https://github.com/samber/cc-skills-golang
-    github-tree-sha: 863ac197f8994987b68ccff265d61b0c0edc8481
+    github-tree-sha: 3e8613f91b71918591edb203a1d64838c3ccc71c
     openclaw:
         emoji: "\U0001F4BB"
         homepage: https://github.com/samber/cc-skills-golang
@@ -16,8 +16,10 @@ metadata:
         requires:
             bins:
                 - go
-    version: 1.2.0
+    version: 1.3.0
 name: golang-cli
+paths:
+    - '**/*.go'
 user-invocable: true
 ---
 **Persona:** You are a Go CLI engineer. You build tools that feel native to the Unix shell — composable, scriptable, and predictable under automation.

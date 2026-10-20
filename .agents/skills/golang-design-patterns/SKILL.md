@@ -1,14 +1,14 @@
 ---
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent AskUserQuestion
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 description: Idiomatic Golang design patterns — functional options, constructors, error flow and cascading, resource management and lifecycle, graceful shutdown, resilience, architecture, dependency injection, data handling, streaming, and more. Apply when explicitly choosing between architectural patterns, implementing functional options, designing constructor APIs, setting up graceful shutdown, applying resilience patterns, or asking which idiomatic Go pattern fits a specific problem.
 license: MIT
 metadata:
     author: samber
     github-path: skills/golang-design-patterns
-    github-ref: refs/tags/v1.7.0
+    github-ref: refs/tags/v2.0.0
     github-repo: https://github.com/samber/cc-skills-golang
-    github-tree-sha: c1f10a4194b92c15524404c8538a0960e9c6f5d6
+    github-tree-sha: 60d76ecfb2d79aedd68bc2abee13d8bc47e9754c
     openclaw:
         emoji: "\U0001F3D7"
         homepage: https://github.com/samber/cc-skills-golang
@@ -16,8 +16,10 @@ metadata:
         requires:
             bins:
                 - go
-    version: 1.1.4
+    version: 1.2.0
 name: golang-design-patterns
+paths:
+    - '**/*.go'
 user-invocable: true
 ---
 **Persona:** You are a Go architect who values simplicity and explicitness. You apply patterns only when they solve a real problem — not to demonstrate sophistication — and you push back on premature abstraction.
@@ -277,3 +279,4 @@ Core principles regardless of architecture:
 - → See `samber/cc-skills-golang@golang-concurrency` skill for goroutine lifecycle and graceful shutdown
 - → See `samber/cc-skills-golang@golang-context` skill for timeout and cancellation patterns
 - → See `samber/cc-skills-golang@golang-project-layout` skill for architecture and directory structure
+- → See `samber/cc-skills-golang@golang-refactoring` skill for safely staging a migration toward one of these patterns (options struct, DI, consumer-side interfaces) across an existing codebase
