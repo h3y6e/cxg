@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"bytes"
@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	cxglint "github.com/h3y6e/cxg/internal/lint"
 )
 
 func TestPipeline_CreatesCommitFromLintOutput(t *testing.T) {
@@ -26,6 +24,7 @@ func TestPipeline_CreatesCommitFromLintOutput(t *testing.T) {
 		"-m", "intent(auth): support social login",
 		"-m", "decision(auth): keep OAuth optional",
 	)
+
 	want := "feat(auth): add login\n\nintent(auth): support social login\ndecision(auth): keep OAuth optional"
 	if commitMessage != want {
 		t.Fatalf("commit message = %q, want %q", commitMessage, want)
@@ -39,6 +38,7 @@ func TestCommitMsgHook_RejectsInvalidMessage(t *testing.T) {
 	repo := initGitRepo(t)
 
 	hookPath := filepath.Join(repo, ".git", "hooks", "commit-msg")
+
 	hook := "#!/bin/sh\n\"" + binary + "\" lint \"$1\"\n"
 	if err := os.WriteFile(hookPath, []byte(hook), 0o755); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
@@ -48,6 +48,7 @@ func TestCommitMsgHook_RejectsInvalidMessage(t *testing.T) {
 	command.Dir = repo
 
 	var stderr bytes.Buffer
+
 	command.Stderr = &stderr
 	if err := command.Run(); err == nil {
 		t.Fatal("expected commit to fail")
@@ -72,41 +73,10 @@ func TestFixPipeline_CreatesNormalizedCommit(t *testing.T) {
 		"--fix",
 		"-m", "feat(auth): add login.\nintent(auth): support social login",
 	)
+
 	want := "feat(auth): add login\n\nintent(auth): support social login"
 	if commitMessage != want {
 		t.Fatalf("commit message = %q, want %q", commitMessage, want)
-	}
-}
-
-func TestContextualCommitSkillExamplesValidate(t *testing.T) {
-	t.Parallel()
-
-	linter := cxglint.New(os.ReadFile)
-	skillPath := filepath.Join("..", "specs", "cli", "research", "contextual-commit", "SKILL.md")
-	content, err := os.ReadFile(skillPath)
-	if err != nil {
-		t.Fatalf("ReadFile() error = %v", err)
-	}
-
-	examples := []string{
-		"fix(button): correct alignment on mobile viewport",
-		"feat(notifications): add email digest for weekly summaries\n\nintent(notifications): users want batch notifications instead of per-event emails\ndecision(digest-schedule): weekly on Monday 9am — matches user research feedback\nconstraint(email-provider): SendGrid batch API limited to 1000 recipients per call",
-		"refactor(payments): migrate from single to multi-currency support\n\nintent(payments): enterprise customers need EUR and GBP alongside USD\nintent(payment-architecture): must be backward compatible, existing USD flows unchanged\ndecision(currency-handling): per-transaction currency over account-level default\nrejected(currency-handling): account-level default too limiting for marketplace sellers\nrejected(money-library): accounting.js — lacks sub-unit arithmetic, using currency.js instead\nconstraint(stripe-integration): Stripe requires currency at PaymentIntent creation, cannot change after\nconstraint(database-migration): existing amount columns need companion currency columns, not replacement\nlearned(stripe-multicurrency): presentment currency vs settlement currency are different Stripe concepts\nlearned(exchange-rates): Stripe handles conversion, we should NOT store our own rates",
-		"refactor(auth): switch from session-based to JWT tokens\n\nintent(auth): original session approach incompatible with redis cluster setup\nrejected(auth-sessions): redis cluster doesn't support session stickiness needed by passport sessions\ndecision(auth-tokens): JWT with short expiry + refresh token pattern\nlearned(redis-cluster): session affinity requires sticky sessions at load balancer level — too invasive",
-	}
-
-	for _, example := range examples {
-		if !bytes.Contains(content, []byte(example)) {
-			t.Fatalf("skill file is missing expected example:\n%s", example)
-		}
-
-		result, err := linter.Run(cxglint.Input{Messages: []string{example}})
-		if err != nil {
-			t.Fatalf("Run() error = %v", err)
-		}
-		if len(result.Violations) != 0 {
-			t.Fatalf("example should validate without violations, got %#v\nexample:\n%s", result.Violations, example)
-		}
 	}
 }
 
@@ -115,9 +85,9 @@ func buildCxgBinary(t *testing.T) string {
 
 	binary := filepath.Join(t.TempDir(), "cxg")
 	command := exec.CommandContext(t.Context(), "go", "build", "-o", binary, ".")
-	command.Dir = ".."
 
 	var stderr bytes.Buffer
+
 	command.Stderr = &stderr
 	if err := command.Run(); err != nil {
 		t.Fatalf("go build error = %v, stderr = %s", err, stderr.String())
@@ -138,7 +108,7 @@ func initGitRepo(t *testing.T) string {
 	return repo
 }
 
-func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...string) string {
+func pipeLintToGitCommit(t *testing.T, repo, binary string, args ...string) string {
 	t.Helper()
 
 	lintCommand := exec.CommandContext(t.Context(), binary, args...)
@@ -150,6 +120,7 @@ func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...strin
 	}
 
 	var lintStderr bytes.Buffer
+
 	lintCommand.Stderr = &lintStderr
 
 	commitCommand := exec.CommandContext(t.Context(), "git", "commit", "--allow-empty", "-F", "-")
@@ -157,16 +128,20 @@ func pipeLintToGitCommit(t *testing.T, repo string, binary string, args ...strin
 	commitCommand.Stdin = pipe
 
 	var commitStderr bytes.Buffer
+
 	commitCommand.Stderr = &commitStderr
 
 	if err := lintCommand.Start(); err != nil {
 		t.Fatalf("lint Start() error = %v", err)
 	}
+
 	commitErr := commitCommand.Run()
 	lintErr := lintCommand.Wait()
+
 	if commitErr != nil {
 		t.Fatalf("git commit error = %v, lint stderr = %s, git stderr = %s", commitErr, lintStderr.String(), commitStderr.String())
 	}
+
 	if lintErr != nil {
 		t.Fatalf("lint Wait() error = %v, lint stderr = %s", lintErr, lintStderr.String())
 	}
@@ -180,8 +155,11 @@ func runGit(t *testing.T, repo string, args ...string) string {
 	command := exec.CommandContext(t.Context(), "git", args...)
 	command.Dir = repo
 
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 

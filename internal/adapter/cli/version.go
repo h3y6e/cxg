@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import "runtime/debug"
 
@@ -11,10 +11,11 @@ func Version(injected string) string {
 	return resolveVersion(injected, moduleVersion)
 }
 
-func resolveVersion(injected string, moduleVersion string) string {
+func resolveVersion(injected, moduleVersion string) string {
 	if injected != "" && injected != "dev" {
 		return injected
 	}
+
 	if moduleVersion != "" && moduleVersion != "(devel)" {
 		return moduleVersion
 	}

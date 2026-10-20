@@ -1,9 +1,30 @@
-package lint
+package message
 
 import (
 	"strings"
 	"unicode"
 )
+
+func Join(messages []string) string {
+	if len(messages) == 1 {
+		return messages[0]
+	}
+
+	return messages[0] + "\n\n" + strings.Join(messages[1:], "\n")
+}
+
+func AppendTrailers(value string, trailers []string) string {
+	value = trimFinalNewlines(value)
+	if len(trailers) == 0 {
+		return value
+	}
+
+	if value == "" {
+		return strings.Join(trailers, "\n")
+	}
+
+	return value + "\n\n" + strings.Join(trailers, "\n")
+}
 
 type message struct {
 	subject   string
@@ -21,12 +42,14 @@ func parse(value string) message {
 		bodyLines: []messageLine{},
 		trailers:  []string{},
 	}
+
 	normalized := trimFinalNewlines(strings.ReplaceAll(value, "\r\n", "\n"))
 	if normalized == "" {
 		return result
 	}
 
 	lines := strings.Split(normalized, "\n")
+
 	result.subject = lines[0]
 	if len(lines) == 1 {
 		return result
@@ -39,6 +62,7 @@ func parse(value string) message {
 			value:  line,
 		})
 	}
+
 	rest = trimTrailingEmptyLines(rest)
 
 	if trailerStart := findTrailerStart(rest); trailerStart >= 0 {
@@ -47,6 +71,7 @@ func parse(value string) message {
 	}
 
 	result.bodyLines = collectNonEmptyLines(rest)
+
 	return result
 }
 
@@ -59,6 +84,7 @@ func findTrailerStart(lines []messageLine) int {
 	for start >= 0 && isTrailerLine(lines[start].value) {
 		start--
 	}
+
 	if start < 0 || lines[start].value != "" {
 		return -1
 	}
@@ -106,12 +132,18 @@ func isTrailerLine(line string) bool {
 	if strings.ContainsAny(token, "()") {
 		return false
 	}
+
 	for _, r := range token {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' {
 			continue
 		}
+
 		return false
 	}
 
 	return value[0] == ' '
+}
+
+func trimFinalNewlines(value string) string {
+	return strings.TrimRight(value, "\r\n")
 }

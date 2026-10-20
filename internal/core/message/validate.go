@@ -1,4 +1,4 @@
-package lint
+package message
 
 import (
 	"fmt"
@@ -11,10 +11,17 @@ var (
 	actionLinePattern = regexp.MustCompile(`^(intent|decision|rejected|constraint|learned)\([^)]+\): .+$`)
 )
 
-func validate(value string) []Violation {
+type Violation struct {
+	Line    int
+	Code    string
+	Message string
+}
+
+func Validate(value string) []Violation {
 	parsed := parse(value)
 
 	violations := []Violation{}
+
 	if parsed.subject == "" {
 		return []Violation{{
 			Line:    1,

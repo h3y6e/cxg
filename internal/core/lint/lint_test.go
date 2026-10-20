@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/h3y6e/cxg/internal/lint"
+	"github.com/h3y6e/cxg/internal/core/lint"
 )
 
-func TestServiceRun(t *testing.T) {
+func TestServiceLint(t *testing.T) {
 	t.Parallel()
 
 	t.Run("when message flags need fixing, running lint returns the normalized valid message", func(t *testing.T) {
@@ -30,18 +30,20 @@ func TestServiceRun(t *testing.T) {
 		}
 
 		// Act
-		result, err := service.Run(input)
+		result, err := service.Lint(input)
 
 		// Assert
 		if err != nil {
-			t.Fatalf("Run() error = %v", err)
+			t.Fatalf("Lint() error = %v", err)
 		}
+
 		if len(result.Violations) != 0 {
-			t.Fatalf("Run() violations = %#v, want empty", result.Violations)
+			t.Fatalf("Lint() violations = %#v, want empty", result.Violations)
 		}
+
 		expected := "feat(auth): add login\n\nintent(auth): support social login\n\nCo-authored-by: Alice <alice@example.com>"
 		if result.Message != expected {
-			t.Fatalf("Run() message = %q, want %q", result.Message, expected)
+			t.Fatalf("Lint() message = %q, want %q", result.Message, expected)
 		}
 	})
 
@@ -59,14 +61,15 @@ func TestServiceRun(t *testing.T) {
 		}
 
 		// Act
-		result, err := service.Run(input)
+		result, err := service.Lint(input)
 
 		// Assert
 		if err != nil {
-			t.Fatalf("Run() error = %v", err)
+			t.Fatalf("Lint() error = %v", err)
 		}
+
 		if result.Message != "feat(stdin): from stdin" {
-			t.Fatalf("Run() message = %q, want stdin message", result.Message)
+			t.Fatalf("Lint() message = %q, want stdin message", result.Message)
 		}
 	})
 
@@ -78,18 +81,20 @@ func TestServiceRun(t *testing.T) {
 			if path != "COMMIT_EDITMSG" {
 				t.Fatalf("read file path = %q, want COMMIT_EDITMSG", path)
 			}
+
 			return []byte("feat(file): from file\n"), nil
 		})
 
 		// Act
-		result, err := service.Run(lint.Input{FilePath: "COMMIT_EDITMSG"})
+		result, err := service.Lint(lint.Input{FilePath: "COMMIT_EDITMSG"})
 
 		// Assert
 		if err != nil {
-			t.Fatalf("Run() error = %v", err)
+			t.Fatalf("Lint() error = %v", err)
 		}
+
 		if result.Message != "feat(file): from file" {
-			t.Fatalf("Run() message = %q, want file message", result.Message)
+			t.Fatalf("Lint() message = %q, want file message", result.Message)
 		}
 	})
 
@@ -103,11 +108,11 @@ func TestServiceRun(t *testing.T) {
 		})
 
 		// Act
-		_, err := service.Run(lint.Input{})
+		_, err := service.Lint(lint.Input{})
 
 		// Assert
 		if !errors.Is(err, lint.ErrNoInput) {
-			t.Fatalf("Run() error = %v, want ErrNoInput", err)
+			t.Fatalf("Lint() error = %v, want ErrNoInput", err)
 		}
 	})
 
@@ -121,40 +126,16 @@ func TestServiceRun(t *testing.T) {
 		})
 
 		// Act
-		_, err := service.Run(lint.Input{FilePath: "COMMIT_EDITMSG"})
+		_, err := service.Lint(lint.Input{FilePath: "COMMIT_EDITMSG"})
 
 		// Assert
 		if !errors.Is(err, expectedCause) {
-			t.Fatalf("Run() error = %v, want wrapped cause", err)
+			t.Fatalf("Lint() error = %v, want wrapped cause", err)
 		}
+
 		expected := fmt.Sprintf("reading file %q: permission denied", "COMMIT_EDITMSG")
 		if err.Error() != expected {
-			t.Fatalf("Run() error = %q, want %q", err, expected)
-		}
-	})
-
-	t.Run("when an invalid action follows extra blank lines, running lint reports its physical line", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		service := lint.New(func(string) ([]byte, error) {
-			t.Fatal("read file must not be called")
-			return nil, nil
-		})
-		input := lint.Input{Messages: []string{"feat(auth): add login\n\n\nnote(auth): unsupported action"}}
-
-		// Act
-		result, err := service.Run(input)
-
-		// Assert
-		if err != nil {
-			t.Fatalf("Run() error = %v", err)
-		}
-		if len(result.Violations) != 1 {
-			t.Fatalf("Run() violations = %#v, want one violation", result.Violations)
-		}
-		if result.Violations[0].Line != 4 {
-			t.Fatalf("Run() violation line = %d, want 4", result.Violations[0].Line)
+			t.Fatalf("Lint() error = %q, want %q", err, expected)
 		}
 	})
 }

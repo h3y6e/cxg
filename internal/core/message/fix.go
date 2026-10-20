@@ -1,11 +1,11 @@
-package lint
+package message
 
 import (
 	"strings"
 	"unicode"
 )
 
-func fix(value string) string {
+func Fix(value string) string {
 	normalized := trimFinalNewlines(strings.ReplaceAll(value, "\r\n", "\n"))
 	if normalized == "" {
 		return ""
@@ -17,6 +17,7 @@ func fix(value string) string {
 		if index > 0 && line != "" {
 			line = strings.TrimLeftFunc(line, unicode.IsSpace)
 		}
+
 		lines[index] = line
 	}
 
@@ -29,8 +30,10 @@ func fix(value string) string {
 		for _, line := range parsed.bodyLines {
 			bodyLines = append(bodyLines, line.value)
 		}
+
 		sections = append(sections, strings.Join(bodyLines, "\n"))
 	}
+
 	if len(parsed.trailers) > 0 {
 		sections = append(sections, strings.Join(parsed.trailers, "\n"))
 	}

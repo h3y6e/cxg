@@ -14,7 +14,7 @@ mise skills sync -g
 Or install each piece yourself:
 
 ```sh
-go install github.com/h3y6e/cxg@latest
+go install github.com/h3y6e/cxg/cmd/cxg@latest
 gh skill install h3y6e/cxg
 ```
 

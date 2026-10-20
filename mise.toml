@@ -4,7 +4,7 @@
 go = "1.26.5"
 
 [tasks.build]
-run = 'go build -o cxg .'
+run = 'go build -o cxg ./cmd/cxg'
 
 [tasks.check]
 run = [
