@@ -33,7 +33,7 @@ cxg lint -m 'feat(auth): add login' -m 'intent(auth): support social login'
 cxg lint --json -m 'feat(auth): add login'
 ```
 
-See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules.
+See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules, and [docs/cli.md](docs/cli.md) for every command and flag.
 
 ## Development
 
@@ -43,4 +43,5 @@ Requires [mise](https://mise.jdx.dev).
 mise run check   # golangci-lint, go fix, and govulncheck
 mise run test    # Run tests
 mise run build   # Build binary
+mise run docs    # Regenerate docs/cli.md
 ```

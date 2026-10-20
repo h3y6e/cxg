@@ -2,6 +2,7 @@
 "go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
 go = "1.27.2"
 golangci-lint = "2.15.0"
+usage = { version = "7.1.0", workflow = "publish-cli.yml" }
 
 [tasks.build]
 run = 'go build -o cxg ./cmd/cxg'
@@ -12,7 +13,12 @@ run = [
   'golangci-lint run',
   'go fix -diff ./...',
   'govulncheck ./...',
+  { task = 'docs' },
+  'git diff --exit-code -- docs',
 ]
+
+[tasks.docs]
+run = 'go run ./cmd/cxg --usage-spec | sed /^version/d | usage generate markdown -f - --out-file docs/cli.md'
 
 [tasks.fmt]
 run = 'golangci-lint fmt'
