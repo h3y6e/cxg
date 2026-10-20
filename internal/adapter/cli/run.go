@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -35,8 +36,15 @@ func usageError(err error) error {
 	return exitError{status: 2, cause: err}
 }
 
+type failureResponse struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Fix     string `json:"fix,omitempty"`
+}
+
 func Run(options Options, linter linter) int {
-	root := newRootCmd(&rootOptions{}, options.Version, linter)
+	opts := &rootOptions{}
+	root := newRootCmd(opts, options.Version, linter)
 
 	args := options.Args
 	if args == nil {
@@ -57,7 +65,7 @@ func Run(options Options, linter linter) int {
 		root.SetErr(options.Stderr)
 	}
 
-	err := root.Execute()
+	command, err := root.ExecuteC()
 	if err == nil {
 		return 0
 	}
@@ -67,8 +75,28 @@ func Run(options Options, linter linter) int {
 		exitErr = exitError{status: 1, cause: err}
 	}
 
-	if exitErr.cause != nil {
-		_, _ = fmt.Fprintln(root.ErrOrStderr(), exitErr.cause)
+	if exitErr.cause == nil {
+		return exitErr.status
+	}
+
+	failure := failureResponse{Code: "failure", Message: exitErr.cause.Error()}
+	if exitErr.status == 2 {
+		failure.Code = "usage"
+		failure.Fix = command.CommandPath() + " --help"
+	}
+
+	if opts.json {
+		_ = json.NewEncoder(root.OutOrStdout()).Encode(lintResponse{
+			Errors: []lintViolationResponse{},
+			Error:  &failure,
+		})
+
+		return exitErr.status
+	}
+
+	_, _ = fmt.Fprintln(root.ErrOrStderr(), failure.Message)
+	if failure.Fix != "" {
+		_, _ = fmt.Fprintf(root.ErrOrStderr(), "Run '%s' for usage.\n", failure.Fix)
 	}
 
 	return exitErr.status

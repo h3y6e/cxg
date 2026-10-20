@@ -51,21 +51,21 @@ func TestRun(t *testing.T) {
 				return lint.Result{}, lint.ErrNoInput
 			}),
 			wantCode:   2,
-			wantStderr: "lint: no input\n",
+			wantStderr: "lint: no input\nRun 'cxg lint --help' for usage.\n",
 		},
 		{
-			name:       "when an unknown flag is provided, running the CLI reports it and exits two",
+			name:       "when an unknown flag is provided, running the CLI points to the command help and exits two",
 			args:       []string{"lint", "--unknown"},
 			linter:     unreadable,
 			wantCode:   2,
-			wantStderr: "unknown flag: --unknown\n",
+			wantStderr: "unknown flag: --unknown\nRun 'cxg lint --help' for usage.\n",
 		},
 		{
-			name:       "when an unknown command is provided, running the CLI reports it and exits two",
+			name:       "when a misspelled command is provided, running the CLI suggests the closest one and exits two",
 			args:       []string{"lnt"},
 			linter:     unreadable,
 			wantCode:   2,
-			wantStderr: "unknown command \"lnt\" for \"cxg\"\n",
+			wantStderr: "unknown command \"lnt\" for \"cxg\"\n\nDid you mean this?\n\tlint\nRun 'cxg --help' for usage.\n",
 		},
 		{
 			name:       "when lint finds violations, running the CLI reports them once and exits one",
@@ -80,6 +80,20 @@ func TestRun(t *testing.T) {
 			linter:     unreadable,
 			wantCode:   1,
 			wantStderr: "reading file \"COMMIT_EDITMSG\": permission denied\n",
+		},
+		{
+			name:       "when json is requested and a usage error occurs, running the CLI writes an error record and exits two",
+			args:       []string{"lint", "--json", "--unknown"},
+			linter:     unreadable,
+			wantCode:   2,
+			wantStdout: `{"valid":false,"errors":[],"error":{"code":"usage","message":"unknown flag: --unknown","fix":"cxg lint --help"}}` + "\n",
+		},
+		{
+			name:       "when json is requested and reading the file fails, running the CLI writes an error record and exits one",
+			args:       []string{"lint", "--json", "COMMIT_EDITMSG"},
+			linter:     unreadable,
+			wantCode:   1,
+			wantStdout: `{"valid":false,"errors":[],"error":{"code":"failure","message":"reading file \"COMMIT_EDITMSG\": permission denied"}}` + "\n",
 		},
 	}
 

@@ -1,20 +1,35 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+
+	cobrausage "github.com/jdx/usage/integrations/cobra"
+	"github.com/spf13/cobra"
+)
 
 type rootOptions struct {
-	json bool
+	json      bool
+	usageSpec bool
 }
 
 func newRootCmd(opts *rootOptions, version string, linter linter) *cobra.Command {
 	root := &cobra.Command{
-		Use:           "cxg",
-		Short:         "Lint contextual messages for AI agents",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		Version:       version,
-		Args:          usageArgs(cobra.NoArgs),
+		Use:                        "cxg",
+		Short:                      "Lint contextual messages for AI agents",
+		SilenceUsage:               true,
+		SilenceErrors:              true,
+		SuggestionsMinimumDistance: 2,
+		Version:                    version,
+		Args:                       rootArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if opts.usageSpec {
+				_, err := io.WriteString(cmd.OutOrStdout(), cobrausage.Generate(cmd))
+				return err
+			}
+
 			return cmd.Help()
 		},
 	}
@@ -23,9 +38,24 @@ func newRootCmd(opts *rootOptions, version string, linter linter) *cobra.Command
 	})
 
 	root.PersistentFlags().BoolVar(&opts.json, "json", false, "Output machine-readable JSON")
+	root.Flags().BoolVar(&opts.usageSpec, "usage-spec", false, "Print the usage spec")
+	_ = root.Flags().MarkHidden("usage-spec")
 	root.AddCommand(newLintCmd(opts, linter))
 
 	return root
+}
+
+func rootArgs(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+
+	message := fmt.Sprintf("unknown command %q for %q", args[0], cmd.CommandPath())
+	if suggestions := cmd.SuggestionsFor(args[0]); len(suggestions) > 0 {
+		message += "\n\nDid you mean this?\n\t" + strings.Join(suggestions, "\n\t")
+	}
+
+	return usageError(errors.New(message))
 }
 
 func usageArgs(validate cobra.PositionalArgs) cobra.PositionalArgs {

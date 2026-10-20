@@ -100,6 +100,7 @@ type lintResponse struct {
 	Valid   bool                    `json:"valid"`
 	Message string                  `json:"message,omitempty"`
 	Errors  []lintViolationResponse `json:"errors"`
+	Error   *failureResponse        `json:"error,omitempty"`
 }
 
 type lintViolationResponse struct {

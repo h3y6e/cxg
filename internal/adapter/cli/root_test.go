@@ -73,4 +73,20 @@ func TestRootCommand(t *testing.T) {
 			t.Fatalf("stdout = %q, want version", stdout.String())
 		}
 	})
+
+	t.Run("when the usage spec is requested, executing the root prints a spec declaring lint", func(t *testing.T) {
+		t.Parallel()
+
+		// Act
+		stdout, _, err := executeRoot(t, lint.New(os.ReadFile), nil, "--usage-spec")
+
+		// Assert
+		if err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+
+		if !strings.Contains(stdout, "bin cxg\n") || !strings.Contains(stdout, "cmd lint ") {
+			t.Fatalf("stdout = %q, want usage spec with lint", stdout)
+		}
+	})
 }
