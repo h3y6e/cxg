@@ -34,7 +34,7 @@ func newRootCmd(opts *rootOptions, version string, linter linter) *cobra.Command
 		},
 	}
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
-		return usageError(err)
+		return exitError{status: 2, cause: err, unparsed: true}
 	})
 
 	root.PersistentFlags().BoolVar(&opts.json, "json", false, "Output machine-readable JSON")

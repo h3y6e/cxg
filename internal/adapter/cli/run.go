@@ -18,8 +18,9 @@ type Options struct {
 }
 
 type exitError struct {
-	status int
-	cause  error
+	status   int
+	cause    error
+	unparsed bool
 }
 
 func (err exitError) Error() string {
@@ -78,12 +79,7 @@ func Run(options Options, linter linter) int {
 	}
 
 	if exitErr.cause != nil {
-		asJSON := opts.json
-		if exitErr.status == 2 {
-			asJSON = jsonRequested(args)
-		}
-
-		report(root, failureFor(command, exitErr), asJSON)
+		report(root, failureFor(command, exitErr), opts.json && !exitErr.unparsed)
 	}
 
 	return exitErr.status
@@ -112,18 +108,4 @@ func report(root *cobra.Command, failure failureResponse, asJSON bool) {
 	if failure.Fix != "" {
 		_, _ = fmt.Fprintf(root.ErrOrStderr(), "Run '%s' for usage.\n", failure.Fix)
 	}
-}
-
-func jsonRequested(args []string) bool {
-	opts := &rootOptions{}
-
-	command, rest, err := newRootCmd(opts, "", nil).Find(args)
-	if err != nil {
-		return false
-	}
-
-	command.FParseErrWhitelist.UnknownFlags = true
-	_ = command.ParseFlags(rest)
-
-	return opts.json
 }
