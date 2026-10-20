@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 type Options struct {
@@ -79,7 +78,12 @@ func Run(options Options, linter linter) int {
 	}
 
 	if exitErr.cause != nil {
-		report(root, failureFor(command, exitErr), opts.json || (exitErr.status == 2 && jsonRequested(args)))
+		asJSON := opts.json
+		if exitErr.status == 2 {
+			asJSON = jsonRequested(args)
+		}
+
+		report(root, failureFor(command, exitErr), asJSON)
 	}
 
 	return exitErr.status
@@ -111,11 +115,15 @@ func report(root *cobra.Command, failure failureResponse, asJSON bool) {
 }
 
 func jsonRequested(args []string) bool {
-	flags := pflag.NewFlagSet("", pflag.ContinueOnError)
-	flags.ParseErrorsAllowlist.UnknownFlags = true
-	flags.SetOutput(io.Discard)
-	requested := flags.Bool("json", false, "")
-	_ = flags.Parse(args)
+	opts := &rootOptions{}
 
-	return *requested
+	command, rest, err := newRootCmd(opts, "", nil).Find(args)
+	if err != nil {
+		return false
+	}
+
+	command.FParseErrWhitelist.UnknownFlags = true
+	_ = command.ParseFlags(rest)
+
+	return opts.json
 }

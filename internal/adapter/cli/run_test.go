@@ -131,6 +131,20 @@ func TestRunReportsFailures(t *testing.T) {
 			wantStdout: `{"valid":false,"errors":[],"error":{"code":"usage","message":"unknown flag: --unknown","fix":"cxg lint --help"}}` + "\n",
 		},
 		{
+			name:       "when --json is the value of --message, running the CLI reports the usage error as text",
+			args:       []string{"lint", "--message", "--json", "a", "b"},
+			linter:     unreadable,
+			wantCode:   2,
+			wantStderr: "accepts at most 1 arg(s), received 2\nRun 'cxg lint --help' for usage.\n",
+		},
+		{
+			name:       "when a later --json=false overrides --json, running the CLI reports the usage error as text",
+			args:       []string{"lint", "--json", "--unknown", "--json=false"},
+			linter:     unreadable,
+			wantCode:   2,
+			wantStderr: "unknown flag: --unknown\nRun 'cxg lint --help' for usage.\n",
+		},
+		{
 			name:       "when json is requested and reading the file fails, running the CLI writes an error record and exits one",
 			args:       []string{"lint", "--json", "COMMIT_EDITMSG"},
 			linter:     unreadable,
