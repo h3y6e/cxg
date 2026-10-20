@@ -40,7 +40,7 @@ See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules.
 Requires [mise](https://mise.jdx.dev).
 
 ```sh
-mise run check   # Formatting, modernization, static analysis, and vulnerability checks
+mise run check   # golangci-lint, go fix, and govulncheck
 mise run test    # Run tests
 mise run build   # Build binary
 ```

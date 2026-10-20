@@ -1,22 +1,21 @@
 [tools]
-"aqua:dominikh/go-tools/staticcheck" = "2026.1"
-"go:golang.org/x/vuln/cmd/govulncheck" = "1.6.0"
-go = "1.26.5"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
+go = "1.27.2"
+golangci-lint = "2.15.0"
 
 [tasks.build]
 run = 'go build -o cxg ./cmd/cxg'
 
 [tasks.check]
 run = [
-  'test -z "$(gofmt -l .)"',
+  'golangci-lint fmt --diff',
+  'golangci-lint run',
   'go fix -diff ./...',
-  'go vet ./...',
-  'staticcheck ./...',
   'govulncheck ./...',
 ]
 
 [tasks.fmt]
-run = 'gofmt -w .'
+run = 'golangci-lint fmt'
 
 [tasks.test]
 run = 'go test ./...'
