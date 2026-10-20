@@ -1,0 +1,135 @@
+version: "2"
+run:
+  concurrency: 4
+  timeout: 5m
+  tests: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 50
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - unused
+    - errcheck
+    - errorlint
+    - nilerr
+    - forcetypeassert
+    - copyloopvar
+    - durationcheck
+    - reassign
+    - gocritic
+    - revive
+    - wsl_v5
+    - whitespace
+    - godot
+    - misspell
+    - dupword
+    - predeclared
+    - errname
+    - asciicheck
+    - gocyclo
+    - nestif
+    - funlen
+    - dupl
+    - perfsprint
+    - unconvert
+    - ineffassign
+    - goconst
+    - gosec
+    - bidichk
+    - bodyclose
+    - noctx
+    - containedctx
+    - fatcontext
+    - sqlclosecheck
+    - rowserrcheck
+    - sloglint
+    - loggercheck
+    - testifylint
+    - thelper
+    - usetesting
+    - paralleltest
+    - modernize
+    - exptostd
+    - intrange
+    - usestdlibvars
+    - exhaustive
+    - nolintlint
+    - depguard
+
+  exclusions:
+    paths:
+      - vendor$
+      - third_party$
+      - testutils$
+      - examples$
+    rules:
+      - path: _test\.go
+        linters:
+          - goconst
+      - path: cmd/cxg/main_test\.go
+        linters:
+          - gosec
+        text: "G204|G306"
+
+  settings:
+    depguard:
+      rules:
+        core-message:
+          list-mode: strict
+          files:
+            - "**/internal/core/message/*.go"
+          allow:
+            - $gostd
+        core-lint:
+          list-mode: strict
+          files:
+            - "**/internal/core/lint/*.go"
+          allow:
+            - $gostd
+            - github.com/h3y6e/cxg/internal/core
+        adapter:
+          files:
+            - "**/internal/adapter/**/*.go"
+          deny:
+            - pkg: github.com/h3y6e/cxg/internal/adapter
+              desc: adapters must not depend on each other
+    dupl:
+      threshold: 100
+    errcheck:
+      check-type-assertions: true
+    funlen:
+      lines: 120
+      statements: 80
+    goconst:
+      min-len: 3
+      min-occurrences: 4
+    gocyclo:
+      min-complexity: 13
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

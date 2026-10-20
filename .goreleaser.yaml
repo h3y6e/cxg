@@ -1,6 +1,7 @@
 version: 2
 builds:
-  - env:
+  - main: ./cmd/cxg
+    env:
       - CGO_ENABLED=0
     flags:
       - -trimpath

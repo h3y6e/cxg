@@ -1,14 +1,14 @@
 ---
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent Bash(govulncheck:*) AskUserQuestion
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 description: Dependency management strategies for Golang projects — go.mod management, installing/upgrading packages, Minimal Version Selection, vulnerability scanning, outdated dependency tracking, binary size analysis, Dependabot/Renovate setup, conflict resolution, and go.work workspaces. Use when adding, removing, or upgrading Go dependencies, auditing vulnerabilities, resolving version conflicts, or setting up automated dependency updates.
 license: MIT
 metadata:
     author: samber
     github-path: skills/golang-dependency-management
-    github-ref: refs/tags/v1.7.0
+    github-ref: refs/tags/v2.0.0
     github-repo: https://github.com/samber/cc-skills-golang
-    github-tree-sha: 5dd9fcfa88c51b0842f803bb512c949febb304c8
+    github-tree-sha: 6243f9398b0c72c0802ab9687b2701a18f4453ee
     openclaw:
         emoji: "\U0001F4E6"
         homepage: https://github.com/samber/cc-skills-golang
@@ -21,7 +21,7 @@ metadata:
             bins:
                 - go
                 - govulncheck
-    version: 1.2.4
+    version: 1.3.0
 name: golang-dependency-management
 user-invocable: true
 ---

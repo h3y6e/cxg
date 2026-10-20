@@ -14,7 +14,7 @@ mise skills sync -g
 Or install each piece yourself:
 
 ```sh
-go install github.com/h3y6e/cxg@latest
+go install github.com/h3y6e/cxg/cmd/cxg@latest
 gh skill install h3y6e/cxg
 ```
 
@@ -40,7 +40,7 @@ See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules.
 Requires [mise](https://mise.jdx.dev).
 
 ```sh
-mise run check   # Formatting, modernization, static analysis, and vulnerability checks
+mise run check   # golangci-lint, go fix, and govulncheck
 mise run test    # Run tests
 mise run build   # Build binary
 ```

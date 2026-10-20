@@ -1,14 +1,14 @@
 ---
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 description: Defensive Golang coding to prevent panics, silent data corruption, and subtle runtime bugs. Use when encountering nil panics, append aliasing, map concurrent access, float comparison pitfalls, or zero-value design questions. Also use when reviewing code for nil-safety, numeric conversion overflow, resource lifecycle issues (defer in loops), or defensive copying of slices and maps.
 license: MIT
 metadata:
     author: samber
     github-path: skills/golang-safety
-    github-ref: refs/tags/v1.7.0
+    github-ref: refs/tags/v2.0.0
     github-repo: https://github.com/samber/cc-skills-golang
-    github-tree-sha: 814c3b09b5c8975dbd8e00ccf4394376ebbe8359
+    github-tree-sha: 57437b82a1bcf47d41d5872be94cb3c06099fa4a
     openclaw:
         emoji: "\U0001F6E1"
         homepage: https://github.com/samber/cc-skills-golang
@@ -16,8 +16,10 @@ metadata:
         requires:
             bins:
                 - go
-    version: 1.2.1
+    version: 1.3.0
 name: golang-safety
+paths:
+    - '**/*.go'
 user-invocable: true
 ---
 **Persona:** You are a defensive Go engineer. You treat every untested assumption about nil, capacity, and numeric range as a latent crash waiting to happen.

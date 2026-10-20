@@ -1,14 +1,14 @@
 ---
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 description: Golang code style conventions — line length and breaking, variable declarations, control flow clarity, when comments help vs hurt. Use when writing or reviewing Go code, asking about style or clarity, or establishing project coding standards. Not for naming conventions (→ See `samber/cc-skills-golang@golang-naming` skill), linter configuration (→ See `samber/cc-skills-golang@golang-lint` skill), or doc comments (→ See `samber/cc-skills-golang@golang-documentation` skill).
 license: MIT
 metadata:
     author: samber
     github-path: skills/golang-code-style
-    github-ref: refs/tags/v1.7.0
+    github-ref: refs/tags/v2.0.0
     github-repo: https://github.com/samber/cc-skills-golang
-    github-tree-sha: 8f538e321df453a4269af3bb64e562aa08fe72a7
+    github-tree-sha: 22fb4807a19faee2955bd45b3eee737cfdeaed41
     openclaw:
         emoji: "\U0001F3A8"
         homepage: https://github.com/samber/cc-skills-golang
@@ -16,10 +16,14 @@ metadata:
         requires:
             bins:
                 - go
-    version: 1.2.0
+    version: 1.3.0
 name: golang-code-style
+paths:
+    - '**/*.go'
 user-invocable: true
 ---
+**Orchestration mode:** Fan out the sub-agents described in the "Parallelizing Code Style Reviews" section, each covering an independent style concern, when reviewing code style across a large codebase, and merge their findings. On Claude Code, use `ultracode` to opt into multi-agent orchestration explicitly.
+
 > **Community default.** A company skill that explicitly supersedes `samber/cc-skills-golang@golang-code-style` skill takes precedence.
 
 # Go Code Style
@@ -200,7 +204,7 @@ Pass small types (`string`, `int`, `bool`, `time.Time`) by value. Use pointers w
 - **One primary type per file** when it has significant methods
 - **Blank imports** (`_ "pkg"`) register side effects (init functions). Restricting them to `main` and test packages makes side effects visible at the application root, not hidden in library code
 - **Dot imports** pollute the namespace and make it impossible to tell where a name comes from — never use in library code
-- **Unexport aggressively** — you can always export later; unexporting is a breaking change
+- **Unexport aggressively** — you can always export later; unexporting is a breaking change. → See `samber/cc-skills-golang@golang-gopls` skill to unexport safely — its rename updates every call site atomically and refuses the change when lowercasing a method would break interface satisfaction, a breakage grep/sed silently ships.
 
 ## String Handling
 
@@ -224,7 +228,7 @@ func Contains[T comparable](slice []T, target T) bool  // not []any
 
 ## Parallelizing Code Style Reviews
 
-When reviewing code style across a large codebase, use up to 5 parallel sub-agents (via the Agent tool), each targeting an independent style concern (e.g. control flow, function design, variable declarations, string handling, code organization).
+When reviewing code style across a large codebase, use up to 5 parallel sub-agents, each targeting an independent style concern (e.g. control flow, function design, variable declarations, string handling, code organization).
 
 ## Enforce with Linters
 
@@ -237,3 +241,4 @@ Many rules are enforced automatically: `gofmt`, `gofumpt`, `goimports`, `gocriti
 - → See the `samber/cc-skills-golang@golang-design-patterns` skill for functional options, builders, constructors
 - → See the `samber/cc-skills-golang@golang-lint` skill for automated formatting enforcement
 - → See `samber/cc-skills-golang@golang-continuous-integration` skill for automated AI-driven code review in CI using these guidelines
+- → See `samber/cc-skills-golang@golang-refactoring` skill for mechanically applying guard-clause conversion, function extraction, and options-struct migration safely across many call sites once a review surfaces violations at scale
