@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/h3y6e/cxg/internal/core/lint"
@@ -34,6 +35,40 @@ func TestRun(t *testing.T) {
 		if !bytes.Contains(stdout.Bytes(), []byte("Usage:")) {
 			t.Fatalf("stdout = %q, want root help", stdout.String())
 		}
+	})
+
+	t.Run("when the json record cannot be written, running the CLI reports the failure on stderr and exits one", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		var stderr bytes.Buffer
+
+		options := Options{
+			Version: "dev",
+			Args:    []string{"lint", "--json", "-m", "feat(auth): add login"},
+			Stdout:  failingWriter{},
+			Stderr:  &stderr,
+		}
+
+		// Act
+		code := Run(options, lint.New(os.ReadFile))
+
+		// Assert
+		if code != 1 {
+			t.Fatalf("Run() code = %d, want 1", code)
+		}
+
+		if stderr.String() != "no space left on device\n" {
+			t.Fatalf("stderr = %q, want write failure", stderr.String())
+		}
+	})
+}
+
+func TestRunReportsFailures(t *testing.T) {
+	t.Parallel()
+
+	unreadable := lint.New(func(string) ([]byte, error) {
+		return nil, errors.New("permission denied")
 	})
 
 	tests := []struct {
@@ -89,6 +124,13 @@ func TestRun(t *testing.T) {
 			wantStdout: `{"valid":false,"errors":[],"error":{"code":"usage","message":"unknown flag: --unknown","fix":"cxg lint --help"}}` + "\n",
 		},
 		{
+			name:       "when json follows an unknown flag, running the CLI still writes an error record and exits two",
+			args:       []string{"lint", "--unknown", "--json"},
+			linter:     unreadable,
+			wantCode:   2,
+			wantStdout: `{"valid":false,"errors":[],"error":{"code":"usage","message":"unknown flag: --unknown","fix":"cxg lint --help"}}` + "\n",
+		},
+		{
 			name:       "when json is requested and reading the file fails, running the CLI writes an error record and exits one",
 			args:       []string{"lint", "--json", "COMMIT_EDITMSG"},
 			linter:     unreadable,
@@ -131,4 +173,10 @@ func TestRun(t *testing.T) {
 			}
 		})
 	}
+}
+
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) {
+	return 0, errors.New("no space left on device")
 }

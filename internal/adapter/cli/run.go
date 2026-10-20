@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type Options struct {
@@ -75,29 +78,44 @@ func Run(options Options, linter linter) int {
 		exitErr = exitError{status: 1, cause: err}
 	}
 
-	if exitErr.cause == nil {
-		return exitErr.status
+	if exitErr.cause != nil {
+		report(root, failureFor(command, exitErr), opts.json || (exitErr.status == 2 && jsonRequested(args)))
 	}
 
-	failure := failureResponse{Code: "failure", Message: exitErr.cause.Error()}
+	return exitErr.status
+}
+
+func failureFor(command *cobra.Command, exitErr exitError) failureResponse {
 	if exitErr.status == 2 {
-		failure.Code = "usage"
-		failure.Fix = command.CommandPath() + " --help"
+		return failureResponse{Code: "usage", Message: exitErr.cause.Error(), Fix: command.CommandPath() + " --help"}
 	}
 
-	if opts.json {
-		_ = json.NewEncoder(root.OutOrStdout()).Encode(lintResponse{
+	return failureResponse{Code: "failure", Message: exitErr.cause.Error()}
+}
+
+func report(root *cobra.Command, failure failureResponse, asJSON bool) {
+	if asJSON {
+		err := json.NewEncoder(root.OutOrStdout()).Encode(lintResponse{
 			Errors: []lintViolationResponse{},
 			Error:  &failure,
 		})
-
-		return exitErr.status
+		if err == nil {
+			return
+		}
 	}
 
 	_, _ = fmt.Fprintln(root.ErrOrStderr(), failure.Message)
 	if failure.Fix != "" {
 		_, _ = fmt.Fprintf(root.ErrOrStderr(), "Run '%s' for usage.\n", failure.Fix)
 	}
+}
 
-	return exitErr.status
+func jsonRequested(args []string) bool {
+	flags := pflag.NewFlagSet("", pflag.ContinueOnError)
+	flags.ParseErrorsAllowlist.UnknownFlags = true
+	flags.SetOutput(io.Discard)
+	requested := flags.Bool("json", false, "")
+	_ = flags.Parse(args)
+
+	return *requested
 }
