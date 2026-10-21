@@ -52,7 +52,7 @@ Scope is a human-readable concept label (e.g. `auth`, `payment-flow`, `session-s
 ## Options
 
 - `--fix`: normalize the message before validation (removes trailing periods, blank-line issues, etc.)
-- `--json`: output machine-readable JSON with `valid`, `message`, and `errors`; lint violations go in `errors`, while usage and runtime failures add `error` (flag parsing errors stay text on stderr) with `code` (`usage` or `failure`), `message`, and, for usage errors, `fix`
+- `--json` (or `CXG_JSON=1`): output machine-readable JSON with `schema`, `valid`, `message`, and `errors`; lint violations go in `errors`, while usage and runtime failures add `error` (flag parsing errors stay text on stderr) with `code` (`usage` or `failure`), `message`, and, for usage errors, `fix`
 - `--trailer`: append a trailer to the message (repeatable)
 
 ```sh

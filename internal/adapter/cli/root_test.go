@@ -90,3 +90,23 @@ func TestRootCommand(t *testing.T) {
 		}
 	})
 }
+
+func TestTerminalStdin(t *testing.T) {
+	t.Parallel()
+
+	t.Run("when lint gets no message on a terminal, executing it fails as a usage error and prints nothing for git commit", func(t *testing.T) {
+		t.Parallel()
+
+		// Act
+		stdout, _, err := executeOnTerminal(t, "lint")
+
+		// Assert
+		if exitStatus(err) != 2 {
+			t.Fatalf("exit status = %d (error %v), want 2", exitStatus(err), err)
+		}
+
+		if stdout != "" {
+			t.Fatalf("stdout = %q, want empty", stdout)
+		}
+	})
+}

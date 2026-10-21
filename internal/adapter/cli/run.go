@@ -5,21 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
+	"github.com/h3y6e/cxg/internal/core/lint"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type Options struct {
-	Version string
-	Args    []string
-	Stdin   io.Reader
-	Stdout  io.Writer
-	Stderr  io.Writer
+	Version       string
+	Args          []string
+	Stdin         io.Reader
+	Stdout        io.Writer
+	Stderr        io.Writer
+	Env           []string
+	StdinTerminal bool
 }
 
 type exitError struct {
 	status   int
 	cause    error
+	fix      string
 	unparsed bool
 }
 
@@ -46,7 +52,7 @@ type failureResponse struct {
 }
 
 func Run(options Options, linter linter) int {
-	opts := &rootOptions{}
+	opts := &rootOptions{terminal: options.StdinTerminal}
 	root := newRootCmd(opts, options.Version, linter)
 
 	args := options.Args
@@ -68,6 +74,8 @@ func Run(options Options, linter linter) int {
 		root.SetErr(options.Stderr)
 	}
 
+	opts.envErr = bindEnv(root, args, options.Env)
+
 	command, err := root.ExecuteC()
 	if err == nil {
 		return 0
@@ -79,7 +87,7 @@ func Run(options Options, linter linter) int {
 	}
 
 	if exitErr.cause != nil {
-		report(root, failureFor(command, exitErr), opts.json && !exitErr.unparsed)
+		report(command, failureFor(command, exitErr), opts.json && !exitErr.unparsed)
 	}
 
 	return exitErr.status
@@ -87,25 +95,85 @@ func Run(options Options, linter linter) int {
 
 func failureFor(command *cobra.Command, exitErr exitError) failureResponse {
 	if exitErr.status == 2 {
-		return failureResponse{Code: "usage", Message: exitErr.cause.Error(), Fix: command.CommandPath() + " --help"}
+		fix := exitErr.fix
+		if fix == "" {
+			fix = command.CommandPath() + " --help"
+		}
+
+		return failureResponse{Code: "usage", Message: exitErr.cause.Error(), Fix: fix}
 	}
 
 	return failureResponse{Code: "failure", Message: exitErr.cause.Error()}
 }
 
-func report(root *cobra.Command, failure failureResponse, asJSON bool) {
+func report(command *cobra.Command, failure failureResponse, asJSON bool) {
 	if asJSON {
-		err := json.NewEncoder(root.OutOrStdout()).Encode(lintResponse{
-			Errors: []lintViolationResponse{},
-			Error:  &failure,
-		})
-		if err == nil {
+		if err := json.NewEncoder(command.OutOrStdout()).Encode(newLintResponse(lint.Result{}, &failure)); err == nil {
 			return
 		}
 	}
 
-	_, _ = fmt.Fprintln(root.ErrOrStderr(), failure.Message)
+	_, _ = fmt.Fprintln(command.ErrOrStderr(), failure.Message)
 	if failure.Fix != "" {
-		_, _ = fmt.Fprintf(root.ErrOrStderr(), "Run '%s' for usage.\n", failure.Fix)
+		_, _ = fmt.Fprintf(command.ErrOrStderr(), "Fix: %s\n", failure.Fix)
 	}
+}
+
+func bindEnv(root *cobra.Command, args, env []string) *exitError {
+	values := map[string]string{}
+
+	for _, entry := range env {
+		name, value, _ := strings.Cut(entry, "=")
+		values[name] = value
+	}
+
+	command, _, err := root.Find(args)
+	if err != nil {
+		command = root
+	}
+
+	var failure *exitError
+
+	bind := func(flag *pflag.Flag) {
+		name, ok := envName(flag)
+		if !ok {
+			return
+		}
+
+		value, ok := values[name]
+		if !ok {
+			return
+		}
+
+		if err := flag.Value.Set(value); err != nil && failure == nil {
+			failure = &exitError{status: 2, cause: fmt.Errorf("invalid %s: %w", name, err), fix: "unset " + name}
+		}
+	}
+
+	command.LocalFlags().VisitAll(bind)
+	command.InheritedFlags().VisitAll(bind)
+
+	return failure
+}
+
+func documentEnv(root *cobra.Command) {
+	document := func(flag *pflag.Flag) {
+		if name, ok := envName(flag); ok {
+			flag.Usage += " [$" + name + "]"
+		}
+	}
+
+	root.PersistentFlags().VisitAll(document)
+
+	for _, command := range root.Commands() {
+		command.Flags().VisitAll(document)
+	}
+}
+
+func envName(flag *pflag.Flag) (string, bool) {
+	if flag.Hidden || flag.Value.Type() == "stringArray" {
+		return "", false
+	}
+
+	return "CXG_" + strings.ToUpper(strings.ReplaceAll(flag.Name, "-", "_")), true
 }

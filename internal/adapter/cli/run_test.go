@@ -71,36 +71,21 @@ func TestRunReportsFailures(t *testing.T) {
 		return nil, errors.New("permission denied")
 	})
 
-	tests := []struct {
-		name       string
-		args       []string
-		linter     linter
-		wantCode   int
-		wantStdout string
-		wantStderr string
-	}{
-		{
-			name: "when lint receives no input, running the CLI reports a usage error and exits two",
-			args: []string{"lint"},
-			linter: linterFunc(func(lint.Input) (lint.Result, error) {
-				return lint.Result{}, lint.ErrNoInput
-			}),
-			wantCode:   2,
-			wantStderr: "lint: no input\nRun 'cxg lint --help' for usage.\n",
-		},
+	tests := []runCase{
+
 		{
 			name:       "when an unknown flag is provided, running the CLI points to the command help and exits two",
 			args:       []string{"lint", "--unknown"},
 			linter:     unreadable,
 			wantCode:   2,
-			wantStderr: "unknown flag: --unknown\nRun 'cxg lint --help' for usage.\n",
+			wantStderr: "unknown flag: --unknown\nFix: cxg lint --help\n",
 		},
 		{
 			name:       "when a misspelled command is provided, running the CLI suggests the closest one and exits two",
 			args:       []string{"lnt"},
 			linter:     unreadable,
 			wantCode:   2,
-			wantStderr: "unknown command \"lnt\" for \"cxg\"\n\nDid you mean this?\n\tlint\nRun 'cxg --help' for usage.\n",
+			wantStderr: "unknown command \"lnt\" for \"cxg\"\n\nDid you mean this?\n\tlint\nFix: cxg --help\n",
 		},
 		{
 			name:       "when lint finds violations, running the CLI reports them once and exits one",
@@ -121,23 +106,84 @@ func TestRunReportsFailures(t *testing.T) {
 			args:       []string{"lint", "--json", "a", "b"},
 			linter:     unreadable,
 			wantCode:   2,
-			wantStdout: `{"valid":false,"errors":[],"error":{"code":"usage","message":"accepts at most 1 arg(s), received 2","fix":"cxg lint --help"}}` + "\n",
+			wantStdout: `{"schema":1,"valid":false,"errors":[],"error":{"code":"usage","message":"accepts at most 1 arg(s), received 2","fix":"cxg lint --help"}}` + "\n",
 		},
 		{
 			name:       "when flag parsing fails, running the CLI reports the error as text even with --json and exits two",
 			args:       []string{"lint", "--json", "--fix=invalid"},
 			linter:     unreadable,
 			wantCode:   2,
-			wantStderr: "invalid argument \"invalid\" for \"--fix\" flag: strconv.ParseBool: parsing \"invalid\": invalid syntax\nRun 'cxg lint --help' for usage.\n",
+			wantStderr: "invalid argument \"invalid\" for \"--fix\" flag: strconv.ParseBool: parsing \"invalid\": invalid syntax\nFix: cxg lint --help\n",
 		},
 		{
 			name:       "when json is requested and reading the file fails, running the CLI writes an error record and exits one",
 			args:       []string{"lint", "--json", "COMMIT_EDITMSG"},
 			linter:     unreadable,
 			wantCode:   1,
-			wantStdout: `{"valid":false,"errors":[],"error":{"code":"failure","message":"reading file \"COMMIT_EDITMSG\": permission denied"}}` + "\n",
+			wantStdout: `{"schema":1,"valid":false,"errors":[],"error":{"code":"failure","message":"reading file \"COMMIT_EDITMSG\": permission denied"}}` + "\n",
 		},
 	}
+
+	runCases(t, tests)
+}
+
+func TestRunReadsEnv(t *testing.T) {
+	t.Parallel()
+
+	unreadable := lint.New(func(string) ([]byte, error) {
+		return nil, errors.New("permission denied")
+	})
+
+	tests := []runCase{
+		{
+			name:       "when CXG_JSON is set, running the CLI writes json without the flag",
+			args:       []string{"lint", "-m", "feat(auth): add login"},
+			env:        []string{"CXG_JSON=1"},
+			linter:     unreadable,
+			wantStdout: `{"schema":1,"valid":true,"message":"feat(auth): add login","errors":[]}` + "\n",
+		}, {
+			name:       "when an env var belongs to another command's flag, running the CLI ignores it",
+			args:       []string{"--version"},
+			env:        []string{"CXG_FIX=maybe"},
+			linter:     unreadable,
+			wantStdout: "cxg version dev\n",
+		}, {
+			name:       "when an env var is invalid and the version is requested, running the CLI still prints the version",
+			args:       []string{"--version"},
+			env:        []string{"CXG_JSON=maybe"},
+			linter:     unreadable,
+			wantStdout: "cxg version dev\n",
+		}, {
+			name:       "when one env var is invalid and CXG_JSON is set, running the CLI reports the error as a json record",
+			args:       []string{"lint", "-m", "feat(auth): add login"},
+			env:        []string{"CXG_FIX=maybe", "CXG_JSON=1"},
+			linter:     unreadable,
+			wantCode:   2,
+			wantStdout: `{"schema":1,"valid":false,"errors":[],"error":{"code":"usage","message":"invalid CXG_FIX: strconv.ParseBool: parsing \"maybe\": invalid syntax","fix":"unset CXG_FIX"}}` + "\n",
+		}, {
+			name:       "when CXG_JSON is not a boolean, running the CLI reports a usage error and exits two",
+			args:       []string{"lint", "-m", "feat(auth): add login"},
+			env:        []string{"CXG_JSON=maybe"},
+			linter:     unreadable,
+			wantCode:   2,
+			wantStderr: "invalid CXG_JSON: strconv.ParseBool: parsing \"maybe\": invalid syntax\nFix: unset CXG_JSON\n",
+		}}
+
+	runCases(t, tests)
+}
+
+type runCase struct {
+	name       string
+	args       []string
+	env        []string
+	linter     linter
+	wantCode   int
+	wantStdout string
+	wantStderr string
+}
+
+func runCases(t *testing.T, tests []runCase) {
+	t.Helper()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -152,6 +198,7 @@ func TestRunReportsFailures(t *testing.T) {
 			options := Options{
 				Version: "dev",
 				Args:    tt.args,
+				Env:     tt.env,
 				Stdout:  &stdout,
 				Stderr:  &stderr,
 			}

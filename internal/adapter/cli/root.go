@@ -13,6 +13,16 @@ import (
 type rootOptions struct {
 	json      bool
 	usageSpec bool
+	terminal  bool
+	envErr    *exitError
+}
+
+func (o rootOptions) checkEnv() error {
+	if o.envErr != nil {
+		return *o.envErr
+	}
+
+	return nil
 }
 
 func newRootCmd(opts *rootOptions, version string, linter linter) *cobra.Command {
@@ -41,6 +51,7 @@ func newRootCmd(opts *rootOptions, version string, linter linter) *cobra.Command
 	root.Flags().BoolVar(&opts.usageSpec, "usage-spec", false, "Print the usage spec")
 	_ = root.Flags().MarkHidden("usage-spec")
 	root.AddCommand(newLintCmd(opts, linter))
+	documentEnv(root)
 
 	return root
 }

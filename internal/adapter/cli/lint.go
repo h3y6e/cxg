@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/h3y6e/cxg/internal/core/lint"
 	"github.com/h3y6e/cxg/internal/core/message"
@@ -47,6 +46,10 @@ A valid message is printed to stdout; violations go to stderr, or to stdout with
 }
 
 func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintOptions, linter linter) error {
+	if err := rootOpts.checkEnv(); err != nil {
+		return err
+	}
+
 	input := lint.Input{
 		Messages: opts.messages,
 		Trailers: opts.trailers,
@@ -54,22 +57,22 @@ func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintO
 	}
 	if len(args) > 0 {
 		input.FilePath = args[0]
-	} else if stdin := cmd.InOrStdin(); hasReadableStdin(stdin) {
-		input.Stdin = stdin
+	} else if !rootOpts.terminal {
+		input.Stdin = cmd.InOrStdin()
 	}
 
 	result, err := linter.Lint(input)
-	if err != nil {
-		if errors.Is(err, lint.ErrNoInput) {
-			return usageError(err)
-		}
+	if errors.Is(err, lint.ErrNoInput) {
+		return usageError(err)
+	}
 
+	if err != nil {
 		return err
 	}
 
 	switch {
 	case rootOpts.json:
-		err = writeLintJSON(cmd.OutOrStdout(), result)
+		err = json.NewEncoder(cmd.OutOrStdout()).Encode(newLintResponse(result, nil))
 	case len(result.Violations) > 0:
 		err = writeViolations(cmd.ErrOrStderr(), result.Violations)
 	default:
@@ -87,21 +90,8 @@ func runLint(cmd *cobra.Command, args []string, rootOpts rootOptions, opts lintO
 	return nil
 }
 
-func hasReadableStdin(reader io.Reader) bool {
-	file, ok := reader.(*os.File)
-	if !ok {
-		return true
-	}
-
-	stat, err := file.Stat()
-	if err != nil {
-		return false
-	}
-
-	return stat.Mode()&os.ModeCharDevice == 0
-}
-
 type lintResponse struct {
+	Schema  int                     `json:"schema"`
 	Valid   bool                    `json:"valid"`
 	Message string                  `json:"message,omitempty"`
 	Errors  []lintViolationResponse `json:"errors"`
@@ -114,7 +104,7 @@ type lintViolationResponse struct {
 	Message string `json:"message"`
 }
 
-func writeLintJSON(w io.Writer, result lint.Result) error {
+func newLintResponse(result lint.Result, failure *failureResponse) lintResponse {
 	violations := make([]lintViolationResponse, 0, len(result.Violations))
 	for _, violation := range result.Violations {
 		violations = append(violations, lintViolationResponse{
@@ -124,7 +114,12 @@ func writeLintJSON(w io.Writer, result lint.Result) error {
 		})
 	}
 
+	if failure != nil {
+		return lintResponse{Schema: 1, Errors: violations, Error: failure}
+	}
+
 	response := lintResponse{
+		Schema: 1,
 		Valid:  len(result.Violations) == 0,
 		Errors: violations,
 	}
@@ -132,7 +127,7 @@ func writeLintJSON(w io.Writer, result lint.Result) error {
 		response.Message = result.Message
 	}
 
-	return json.NewEncoder(w).Encode(response)
+	return response
 }
 
 func writeViolations(w io.Writer, violations []message.Violation) error {
