@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/h3y6e/cxg/internal/core/lint"
@@ -170,6 +171,48 @@ func TestRunReadsEnv(t *testing.T) {
 		}}
 
 	runCases(t, tests)
+}
+
+func TestRunPrintsHelpDespiteInvalidEnv(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		args     []string
+		terminal bool
+	}{
+		{name: "when help for recall is requested, running the CLI prints it", args: []string{"help", "recall"}},
+		{name: "when recall gets no query on a terminal, running the CLI prints its help", args: []string{"recall"}, terminal: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+" even with an invalid env var", func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			var stdout bytes.Buffer
+
+			options := Options{
+				Version:       "dev",
+				Args:          tt.args,
+				Env:           []string{"CXG_JSON=maybe"},
+				Stdout:        &stdout,
+				StdinTerminal: tt.terminal,
+			}
+
+			// Act
+			code := Run(options, lint.New(os.ReadFile))
+
+			// Assert
+			if code != 0 {
+				t.Fatalf("Run() code = %d, want 0", code)
+			}
+
+			if !strings.Contains(stdout.String(), "Usage:\n  cxg recall") {
+				t.Fatalf("stdout = %q, want recall help", stdout.String())
+			}
+		})
+	}
 }
 
 type runCase struct {

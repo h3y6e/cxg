@@ -59,7 +59,8 @@ jobs:
           artifacts: dist/cxg_*.tar.gz dist/cxg_*.zip
           bin: cxg
           resources: |
-            skill/cxg=repo:skills/cxg
+            skill/cxg=archive:skills/cxg
+            skill/cxg-recall=archive:skills/cxg-recall
             cli-spec/usage=exec:cxg --usage-spec
       - run: gh release edit "${{ needs.tagpr.outputs.tag }}" --draft=false
         env:

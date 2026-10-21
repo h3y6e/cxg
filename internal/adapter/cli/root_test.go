@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -94,19 +95,54 @@ func TestRootCommand(t *testing.T) {
 func TestTerminalStdin(t *testing.T) {
 	t.Parallel()
 
-	t.Run("when lint gets no message on a terminal, executing it fails as a usage error and prints nothing for git commit", func(t *testing.T) {
+	t.Run("when recall gets no query on a terminal, executing it prints its help and exits zero", func(t *testing.T) {
 		t.Parallel()
 
 		// Act
-		stdout, _, err := executeOnTerminal(t, "lint")
+		stdout, _, err := executeOnTerminal(t, "recall")
 
 		// Assert
-		if exitStatus(err) != 2 {
-			t.Fatalf("exit status = %d (error %v), want 2", exitStatus(err), err)
+		if err != nil {
+			t.Fatalf("Execute() error = %v", err)
 		}
 
-		if stdout != "" {
-			t.Fatalf("stdout = %q, want empty", stdout)
+		if !strings.Contains(stdout, "Usage:\n  cxg recall") {
+			t.Fatalf("stdout = %q, want recall usage", stdout)
 		}
 	})
+
+	tests := []struct {
+		name    string
+		args    []string
+		wantFix string
+	}{
+		{
+			name: "when lint gets no message on a terminal, executing it fails as a usage error and prints nothing for git commit",
+			args: []string{"lint"},
+		},
+		{
+			name:    "when recall gets a query on a terminal, executing it fails with a shell-quoted piped command",
+			args:    []string{"recall", "--", "-user's-auth"},
+			wantFix: `git log --all | cxg recall -- '-user'\''s-auth'`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Act
+			stdout, _, err := executeOnTerminal(t, tt.args...)
+
+			// Assert
+			exitErr, _ := errors.AsType[exitError](err)
+			if exitErr.status != 2 || exitErr.fix != tt.wantFix {
+				t.Fatalf("error = %#v, want status 2 with fix %q", exitErr, tt.wantFix)
+			}
+
+			if stdout != "" {
+				t.Fatalf("stdout = %q, want empty", stdout)
+			}
+		})
+	}
 }

@@ -108,7 +108,12 @@ func failureFor(command *cobra.Command, exitErr exitError) failureResponse {
 
 func report(command *cobra.Command, failure failureResponse, asJSON bool) {
 	if asJSON {
-		if err := json.NewEncoder(command.OutOrStdout()).Encode(newLintResponse(lint.Result{}, &failure)); err == nil {
+		var record any = newLintResponse(lint.Result{}, &failure)
+		if command.Name() == "recall" {
+			record = newRecallResponse(nil, &failure)
+		}
+
+		if err := json.NewEncoder(command.OutOrStdout()).Encode(record); err == nil {
 			return
 		}
 	}

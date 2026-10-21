@@ -3,13 +3,30 @@ package message
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"unicode/utf8"
 )
 
 var (
 	subjectPattern    = regexp.MustCompile(`^(feat|fix|refactor|perf|test|docs|style|build|ci|chore|revert)(\([^)]+\))?(!)?: .+$`)
-	actionLinePattern = regexp.MustCompile(`^(intent|decision|rejected|constraint|learned)\([^)]+\): .+$`)
+	ActionTypes       = []string{"intent", "decision", "rejected", "constraint", "learned"}
+	actionLinePattern = regexp.MustCompile(`^(` + strings.Join(ActionTypes, "|") + `)\(([^)]+)\): (.+)$`)
 )
+
+type ActionLine struct {
+	Type  string
+	Scope string
+	Text  string
+}
+
+func ParseActionLine(line string) (ActionLine, bool) {
+	match := actionLinePattern.FindStringSubmatch(line)
+	if match == nil {
+		return ActionLine{}, false
+	}
+
+	return ActionLine{Type: match[1], Scope: match[2], Text: match[3]}, true
+}
 
 type Violation struct {
 	Line    int

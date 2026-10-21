@@ -28,7 +28,7 @@ func (o rootOptions) checkEnv() error {
 func newRootCmd(opts *rootOptions, version string, linter linter) *cobra.Command {
 	root := &cobra.Command{
 		Use:                        "cxg",
-		Short:                      "Lint contextual messages for AI agents",
+		Short:                      "Lint and recall contextual commit messages for AI agents",
 		SilenceUsage:               true,
 		SilenceErrors:              true,
 		SuggestionsMinimumDistance: 2,
@@ -50,7 +50,7 @@ func newRootCmd(opts *rootOptions, version string, linter linter) *cobra.Command
 	root.PersistentFlags().BoolVar(&opts.json, "json", false, "Output machine-readable JSON")
 	root.Flags().BoolVar(&opts.usageSpec, "usage-spec", false, "Print the usage spec")
 	_ = root.Flags().MarkHidden("usage-spec")
-	root.AddCommand(newLintCmd(opts, linter))
+	root.AddCommand(newLintCmd(opts, linter), newRecallCmd(opts))
 	documentEnv(root)
 
 	return root
