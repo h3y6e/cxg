@@ -23,7 +23,7 @@ Simply type cxg help [path to command] for full details.
 Validate a contextual commit message.
 
 The message comes from --message lines, the file argument, or stdin, in that order.
-A valid message is printed to stdout; violations go to stderr with exit status 1.
+A valid message is printed to stdout; violations go to stderr, or to stdout with --json, with exit status 1.
 
 ### Arguments
 - **`[file]`**
