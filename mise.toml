@@ -13,12 +13,7 @@ run = [
   'golangci-lint run',
   'go fix -diff ./...',
   'govulncheck ./...',
-  { task = 'docs' },
-  'git diff --exit-code -- docs',
 ]
-
-[tasks.docs]
-run = 'go run ./cmd/cxg --usage-spec | sed /^version/d | usage generate markdown -f - --out-file docs/usage.md'
 
 [tasks.fmt]
 run = 'golangci-lint fmt'
@@ -27,4 +22,8 @@ run = 'golangci-lint fmt'
 run = 'go test ./...'
 
 [tasks.prerelease]
-run = ['go mod tidy', 'git add go.mod go.sum']
+run = [
+  'go mod tidy',
+  'go run -ldflags=-X=main.version=$TAGPR_NEXT_VERSION ./cmd/cxg --usage-spec | usage generate markdown -f - > docs/usage.md',
+  'git add go.mod go.sum docs/usage.md',
+]

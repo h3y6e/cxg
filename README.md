@@ -43,5 +43,4 @@ Requires [mise](https://mise.jdx.dev).
 mise run check   # golangci-lint, go fix, and govulncheck
 mise run test    # Run tests
 mise run build   # Build binary
-mise run docs    # Regenerate docs/usage.md
 ```
