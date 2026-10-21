@@ -1,7 +1,7 @@
 [tagpr]
 releaseBranch = main
 versionFile = skills/cxg/SKILL.md
-vPrefix = true
+vPrefix = false
 release = draft
 changelog = false
 calendarVersioning = YYYY.MM.MICRO
