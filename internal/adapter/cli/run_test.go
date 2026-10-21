@@ -93,7 +93,7 @@ func TestRunReportsFailures(t *testing.T) {
 			args:       []string{"lint", "--message", "bad message"},
 			linter:     unreadable,
 			wantCode:   1,
-			wantStderr: "line 1 [invalid-subject] subject must match <type>(<scope>): <description>\n",
+			wantStderr: "line 1 [invalid-subject] subject must match <type>(<scope>): <description> with type one of feat, fix, refactor, perf, test, docs, style, build, ci, chore, revert\n",
 		},
 		{
 			name:       "when reading the file fails, running the CLI reports the cause and exits one",

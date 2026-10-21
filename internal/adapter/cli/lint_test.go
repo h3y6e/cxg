@@ -113,7 +113,7 @@ func TestLintCommandOutput(t *testing.T) {
 			name:       "when the message is invalid, executing lint writes violations to stderr and fails",
 			args:       []string{"lint", "-m", "bad message"},
 			wantStatus: 1,
-			wantStderr: "line 1 [invalid-subject] subject must match <type>(<scope>): <description>\n",
+			wantStderr: "line 1 [invalid-subject] subject must match <type>(<scope>): <description> with type one of feat, fix, refactor, perf, test, docs, style, build, ci, chore, revert\n",
 		},
 		{
 			name:       "when a file is given, executing lint writes its content without the final newline",
@@ -135,7 +135,7 @@ func TestLintCommandOutput(t *testing.T) {
 			name:       "when json is requested for an invalid message, executing lint writes its violations and fails",
 			args:       []string{"lint", "--json", "-m", "bad message"},
 			wantStatus: 1,
-			wantStdout: `{"schema":1,"valid":false,"errors":[{"line":1,"code":"invalid-subject","message":"subject must match \u003ctype\u003e(\u003cscope\u003e): \u003cdescription\u003e"}]}` + "\n",
+			wantStdout: `{"schema":1,"valid":false,"errors":[{"line":1,"code":"invalid-subject","message":"subject must match \u003ctype\u003e(\u003cscope\u003e): \u003cdescription\u003e with type one of feat, fix, refactor, perf, test, docs, style, build, ci, chore, revert"}]}` + "\n",
 		},
 	}
 
