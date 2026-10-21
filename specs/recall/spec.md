@@ -96,7 +96,7 @@ Acceptance Scenarios:
 
 - `recall` command, positional query, `--json`
 - `skills/cxg-recall/SKILL.md`: when to recall, which `git log` range to pipe, how to brief from the output; it defers to the installed `cxg recall --help`
-- Release wiring: ship `skills/` in every release archive, declare `skill/cxg` and `skill/cxg-recall` as `archive:` resources, list both in `.tagpr`, `.agents/skills`, and README
+- Release wiring: ship `skills/` in every release archive, rename `skills/cxg` to `skills/cxg-commit`, declare `skill/cxg-commit` and `skill/cxg-recall` as `archive:` resources, list both in `.tagpr`, `.agents/skills`, and README
 - `CXG_*` env vars for the existing command too; invalid values fail only commands that use them, never help or version
 
 ### Out of Scope

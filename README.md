@@ -18,7 +18,7 @@ go install github.com/h3y6e/cxg/cmd/cxg@latest
 gh skill install h3y6e/cxg
 ```
 
-The agent skills are [`skills/cxg`](skills/cxg/SKILL.md) for commits and [`skills/cxg-recall`](skills/cxg-recall/SKILL.md) for recalling context.
+The agent skills are [`skills/cxg-commit`](skills/cxg-commit/SKILL.md) for commits and [`skills/cxg-recall`](skills/cxg-recall/SKILL.md) for recalling context.
 
 ## Usage
 
@@ -33,7 +33,7 @@ git log main..HEAD | cxg recall
 git log --all | cxg recall 'rejected(auth)'
 ```
 
-See [SKILL.md](skills/cxg/SKILL.md) for the commit format and rules, and [docs/usage.md](docs/usage.md) for every command and flag.
+See [SKILL.md](skills/cxg-commit/SKILL.md) for the commit format and rules, and [docs/usage.md](docs/usage.md) for every command and flag.
 
 ## Development
 

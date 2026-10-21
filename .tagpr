@@ -1,6 +1,6 @@
 [tagpr]
 releaseBranch = main
-versionFile = skills/cxg/SKILL.md,skills/cxg-recall/SKILL.md
+versionFile = skills/cxg-commit/SKILL.md,skills/cxg-recall/SKILL.md
 vPrefix = false
 release = draft
 changelog = false
