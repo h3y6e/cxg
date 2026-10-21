@@ -28,7 +28,12 @@ func newLintCmd(rootOpts *rootOptions, linter linter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "lint [file]",
 		Short: "Validate a contextual commit message",
-		Args:  usageArgs(cobra.MaximumNArgs(1)),
+		Long: `Validate a contextual commit message.
+
+The message comes from --message lines, the file argument, or stdin, in that order.
+A valid message is printed to stdout; violations go to stderr, or to stdout with --json, with exit status 1.`,
+		Example: `  cxg lint -m 'feat(auth): add login' -m 'intent(auth): support social login' | git commit -F -`,
+		Args:    usageArgs(cobra.MaximumNArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLint(cmd, args, *rootOpts, opts, linter)
 		},
