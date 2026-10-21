@@ -24,17 +24,6 @@ func TestLintCommandInput(t *testing.T) {
 
 	pipe := strings.NewReader("feat(stdin): ignored")
 
-	terminal, err := os.Open(os.DevNull)
-	if err != nil {
-		t.Fatalf("Open() error = %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := terminal.Close(); err != nil {
-			t.Errorf("Close() error = %v", err)
-		}
-	})
-
 	tests := []struct {
 		name  string
 		args  []string
@@ -62,12 +51,6 @@ func TestLintCommandInput(t *testing.T) {
 			args:  []string{"lint", "COMMIT_EDITMSG"},
 			stdin: strings.NewReader("feat(stdin): ignored"),
 			want:  lint.Input{FilePath: "COMMIT_EDITMSG"},
-		},
-		{
-			name:  "when stdin is a character device, executing lint does not pass it",
-			args:  []string{"lint"},
-			stdin: terminal,
-			want:  lint.Input{},
 		},
 	}
 
@@ -130,7 +113,7 @@ func TestLintCommandOutput(t *testing.T) {
 			name:       "when the message is invalid, executing lint writes violations to stderr and fails",
 			args:       []string{"lint", "-m", "bad message"},
 			wantStatus: 1,
-			wantStderr: "line 1 [invalid-subject] subject must match <type>(<scope>): <description>\n",
+			wantStderr: "line 1 [invalid-subject] subject must match <type>(<scope>): <description> with type one of feat, fix, refactor, perf, test, docs, style, build, ci, chore, revert\n",
 		},
 		{
 			name:       "when a file is given, executing lint writes its content without the final newline",
@@ -146,13 +129,13 @@ func TestLintCommandOutput(t *testing.T) {
 		{
 			name:       "when json is requested for a valid message, executing lint writes a valid record",
 			args:       []string{"lint", "--json", "-m", "feat(auth): add login"},
-			wantStdout: `{"valid":true,"message":"feat(auth): add login","errors":[]}` + "\n",
+			wantStdout: `{"schema":1,"valid":true,"message":"feat(auth): add login","errors":[]}` + "\n",
 		},
 		{
 			name:       "when json is requested for an invalid message, executing lint writes its violations and fails",
 			args:       []string{"lint", "--json", "-m", "bad message"},
 			wantStatus: 1,
-			wantStdout: `{"valid":false,"errors":[{"line":1,"code":"invalid-subject","message":"subject must match \u003ctype\u003e(\u003cscope\u003e): \u003cdescription\u003e"}]}` + "\n",
+			wantStdout: `{"schema":1,"valid":false,"errors":[{"line":1,"code":"invalid-subject","message":"subject must match \u003ctype\u003e(\u003cscope\u003e): \u003cdescription\u003e with type one of feat, fix, refactor, perf, test, docs, style, build, ci, chore, revert"}]}` + "\n",
 		},
 	}
 
@@ -182,7 +165,19 @@ func TestLintCommandOutput(t *testing.T) {
 func executeRoot(t *testing.T, linter linter, stdin io.Reader, args ...string) (stdout, stderr string, err error) {
 	t.Helper()
 
-	root := newRootCmd(&rootOptions{}, "dev", linter)
+	return execute(t, &rootOptions{}, linter, stdin, args...)
+}
+
+func executeOnTerminal(t *testing.T, args ...string) (stdout, stderr string, err error) {
+	t.Helper()
+
+	return execute(t, &rootOptions{terminal: true}, lint.New(os.ReadFile), nil, args...)
+}
+
+func execute(t *testing.T, opts *rootOptions, linter linter, stdin io.Reader, args ...string) (stdout, stderr string, err error) {
+	t.Helper()
+
+	root := newRootCmd(opts, "dev", linter)
 	root.SetArgs(args)
 
 	if stdin != nil {

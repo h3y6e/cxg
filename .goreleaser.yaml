@@ -9,7 +9,11 @@ builds:
       - -s -w
       - -X main.version={{.Version}}
 archives:
-  - format_overrides:
+  - files:
+      - LICENSE
+      - README.md
+      - skills/**/*
+    format_overrides:
       - goos: windows
         formats: [zip]
 changelog:

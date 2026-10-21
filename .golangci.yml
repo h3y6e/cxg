@@ -84,10 +84,10 @@ linters:
             - "**/internal/core/message/*.go"
           allow:
             - $gostd
-        core-lint:
+        core:
           list-mode: strict
           files:
-            - "**/internal/core/lint/*.go"
+            - "**/internal/core/**/*.go"
           allow:
             - $gostd
             - github.com/h3y6e/cxg/internal/core

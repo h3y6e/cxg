@@ -80,6 +80,35 @@ func TestFixPipeline_CreatesNormalizedCommit(t *testing.T) {
 	}
 }
 
+func TestRecallPipeline_ReadsActionLinesFromGitLog(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	binary := buildCxgBinary(t)
+	repo := initGitRepo(t)
+	runGit(t, repo, "commit", "--allow-empty", "-m", "feat(auth): add login", "-m", "rejected(auth): auth0-sdk session model")
+	runGit(t, repo, "commit", "--allow-empty", "-m", "fix(payments): round amounts", "-m", "constraint(payments): integer cents only")
+
+	recallCommand := exec.CommandContext(t.Context(), binary, "recall", "rejected(auth)")
+	recallCommand.Dir = repo
+	recallCommand.Stdin = strings.NewReader(runGit(t, repo, "log", "--stat"))
+
+	// Act
+	output, err := recallCommand.Output()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("recall error = %v", err)
+	}
+
+	hash := runGit(t, repo, "rev-parse", "--short=7", "HEAD~1")
+
+	want := strings.TrimSpace(hash) + " feat(auth): add login\n  rejected(auth): auth0-sdk session model\n"
+	if string(output) != want {
+		t.Fatalf("recall output = %q, want %q", output, want)
+	}
+}
+
 func buildCxgBinary(t *testing.T) string {
 	t.Helper()
 
