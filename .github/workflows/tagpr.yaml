@@ -53,7 +53,7 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: jdx/packslip@74c75db7d611b36dd5a157999ec16cf823ccf80c # v1.2.0
+      - uses: jdx/packslip@e0340e0c1d10c90a434de2b90f3a1ba345923564 # v1.11.4
         with:
           tag: ${{ needs.tagpr.outputs.tag }}
           artifacts: dist/cxg_*.tar.gz dist/cxg_*.zip
